@@ -11,6 +11,10 @@ ament_auto_find_build_dependencies()
 
 ament_auto_add_executable(simple_pure_pursuit
   src/simple_pure_pursuit.cpp
+  
 )
 
-ament_auto_package()
+ament_auto_package(
+  INSTALL_TO_SHARE
+  config
+  )
