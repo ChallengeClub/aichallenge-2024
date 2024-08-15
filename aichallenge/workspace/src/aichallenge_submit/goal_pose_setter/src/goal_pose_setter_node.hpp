@@ -49,6 +49,7 @@ private:
     bool pit_stop_published = false;
     bool is_started_ = false;
     int delay_count_ = 0;
+    int lap_count_ = 0;
     float goal_range_;
     float vehicle_condition_;
     geometry_msgs::msg::Pose goal_position_;
