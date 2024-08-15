@@ -44,6 +44,7 @@ private:
     bool half_goal_pose_published_ = false;
     bool is_started_ = false;
     int delay_count_ = 0;
+    int lap_count_ = 0;
     float goal_range_;
     geometry_msgs::msg::Pose goal_position_;
     geometry_msgs::msg::Pose half_goal_position_;
