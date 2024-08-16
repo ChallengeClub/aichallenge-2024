@@ -1,4 +1,4 @@
-import math,random
+import os
 import rclpy
 from rclpy.node import Node
 
@@ -13,6 +13,23 @@ class MinimalSubscriber(Node):
 
     def __init__(self):
         super().__init__('minimal_subscriber')
+        # load course data point
+        self.left_bound = []
+        self.right_bound = []
+        self.center_line = []
+        with open('/aichallenge/workspace/install/path_to_trajectory/share/path_to_trajectory/data/out_lane_bound.csv') as f:
+            lines = f.readlines()
+            for line in lines[1:]:
+                self.left_bound.append({"x":float(line.split(",")[0]),"y":float(line.split(",")[1])})
+        with open('/aichallenge/workspace/install/path_to_trajectory/share/path_to_trajectory/data/inner_lane_bound.csv') as f:
+            lines = f.readlines()
+            for line in lines[1:]:
+                self.right_bound.append({"x":float(line.split(",")[0]),"y":float(line.split(",")[1])})
+        with open('/aichallenge/workspace/install/path_to_trajectory/share/path_to_trajectory/data/fixed_center.csv') as f:
+            lines = f.readlines()
+            for line in lines[1:]:
+                self.center_line.append({"x":float(line.split(",")[0]),"y":float(line.split(",")[1])})
+
         self.subscription = self.create_subscription(
             PathWithLaneId,
             '/planning/scenario_planning/lane_driving/behavior_planning/path_with_lane_id',
@@ -24,9 +41,6 @@ class MinimalSubscriber(Node):
             self.objects_callback,
             1)
         self.objects=[]
-        self.left_bound = []
-        self.right_bound = []
-        self.first_round_flag = 0
 
         self.publisher_ = self.create_publisher(Trajectory, 'output', 1)
         # self.timer = self.create_timer(1.0, self.timer_callback)
@@ -50,16 +64,16 @@ class MinimalSubscriber(Node):
     #     self.get_logger().info("Left: %s" % (distance_min_left))
     #     self.get_logger().info("Compare Result: %s" % (distance_min_right < distance_min_left))
     #     return (distance_min_right < distance_min_left)
-    def find_nearest_point_in_boundary(self,trajectory_point: PathPoint,boundary, gain):
+    def find_nearest_point_in_boundary(self,trajectory_point: PathPoint, boundary, gain):
         distance_min = 100
         point_min = 1
         for i,data in enumerate(boundary):
-            dist = (trajectory_point.pose.position.x - data.x)**2 + (trajectory_point.pose.position.y - data.y)**2
+            dist = (trajectory_point.pose.position.x - data["x"])**2 + (trajectory_point.pose.position.y - data["y"])**2
             if(dist<distance_min):
                 distance_min =dist
                 point_min = i
-        trajectory_point.pose.position.x -= (trajectory_point.pose.position.x - boundary[point_min].x)/(1.8+gain)
-        trajectory_point.pose.position.y -= (trajectory_point.pose.position.y - boundary[point_min].y)/(1.8+gain)
+        trajectory_point.pose.position.x -= (trajectory_point.pose.position.x - boundary[point_min]["x"])/(1.9+gain)
+        trajectory_point.pose.position.y -= (trajectory_point.pose.position.y - boundary[point_min]["y"])/(1.9+gain)
                 
 
     def listener_callback(self, msg:PathWithLaneId):
@@ -67,22 +81,6 @@ class MinimalSubscriber(Node):
         # self.get_logger().info(str(len(msg.right_bound)))
         trajectory = Trajectory()
         trajectory.header=msg.header
-
-        # get boundary at start
-        if(len(self.left_bound) == 0):
-            self.left_bound = msg.left_bound # part of course ending is lost, fix me
-            self.get_logger().info("left_bount_len: %s" % len(msg.left_bound))
-        if(len(self.right_bound) == 0):
-            self.right_bound = msg.right_bound  # part of course ending is lost, fix me
-            self.get_logger().info("right_bount_len: %s" % len(msg.right_bound))
-        # append boundary of goal -> start point, which is not showed at firts time , may be need fix
-        if( (len(msg.left_bound) == 2) & (self.first_round_flag == 0 ) ):
-            self.first_round_flag = 1
-        if( (len(msg.left_bound) != 2) & (self.first_round_flag == 1 ) ):
-            self.first_round_flag = 2
-            self.left_bound += msg.left_bound[2:15]
-            self.right_bound += msg.right_bound[2:15]
-            self.get_logger().info("route merged")
         
         # transfer PathWithLaneId() to TrajectoryPoint()
         for data in msg.points:
@@ -95,7 +93,22 @@ class MinimalSubscriber(Node):
         for i in range(round(len(self.objects)/4)):
             object_x = self.objects[i*4]
             object_y = self.objects[i*4+1]
-            # object_r = self.objects[i*4+3] + 1.8
+
+            # find nearest point in center line, then determin object is on right or left
+            distance_min = 100
+            point_min = -1
+            for i,point in enumerate(self.center_line):                
+                dist = (point["x"] - object_x)**2 + (point["y"] - object_y)**2
+                if(dist<distance_min):
+                    distance_min =dist
+                    point_min = i
+            if(point_min < 2):
+                point_min = 2 # fix out of range problem
+            vx1 = self.center_line[point_min]["x"] - self.center_line[point_min-2]["x"]
+            vy1 = self.center_line[point_min]["y"] - self.center_line[point_min-2]["y"]
+            vx2 = object_x - self.center_line[point_min-2]["x"]
+            vy2 = object_y - self.center_line[point_min-2]["y"]
+            ans = vx1 * vy2 - vy1 * vx2
 
             # find nearest point in TrajectoryPoint() of object
             distance_min = 100
@@ -105,21 +118,8 @@ class MinimalSubscriber(Node):
                 if(dist<distance_min):
                     distance_min =dist
                     point_min = i
-            if(distance_min > 8.0):
+            if(distance_min > 9.0):
                 continue
-            if(point_min > (len(trajectory.points)-2)):
-                point_min = len(trajectory.points)-2
-
-            # check object is at right or left of TrajectoryPoint()
-            if(point_min < 2):
-                point_min = 2 # fix out of range problem
-            # if(point_min > (len(trajectory.points)-3)):
-            #     point_min = len(trajectory.points)-3 # fix out of range problem
-            vx1 = trajectory.points[point_min].pose.position.x - trajectory.points[point_min-2].pose.position.x
-            vy1 = trajectory.points[point_min].pose.position.y - trajectory.points[point_min-2].pose.position.y
-            vx2 = object_x - trajectory.points[point_min-2].pose.position.x
-            vy2 = object_y - trajectory.points[point_min-2].pose.position.y  
-            ans = vx1 * vy2 - vy1 * vx2 
 
             # <0 is right, then aviod object by driving at left side
             start_avoid = -7
@@ -131,10 +131,10 @@ class MinimalSubscriber(Node):
 
             if (ans < 0 ):
                 for i in range(start_avoid,end_avoid):
-                    self.find_nearest_point_in_boundary(trajectory.points[point_min+i],self.left_bound, abs(i)*0.4)
+                    self.find_nearest_point_in_boundary(trajectory.points[point_min+i],self.left_bound, abs(i)*0.3)
             else:
                 for i in range(start_avoid,end_avoid):
-                    self.find_nearest_point_in_boundary(trajectory.points[point_min+i],self.right_bound, abs(i)*0.4)
+                    self.find_nearest_point_in_boundary(trajectory.points[point_min+i],self.right_bound, abs(i)*0.3)
 
         # trajectory.header.stamp=self.get_clock().now().to_msg()
         self.publisher_.publish(trajectory)
