@@ -1,0 +1,7 @@
+/**:
+  ros__parameters:
+    minimum_objects_point_range: 8.0
+    start_avoid_lim: -7
+    end_avoid_lim: 6
+    shift_alpha: 0.5
+    shift_beta: 1.8

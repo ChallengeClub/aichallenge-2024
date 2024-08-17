@@ -195,10 +195,14 @@
       </group> <!-- lane_driving -->
 
       <!-- Customizable -->
-      <node pkg="path_to_trajectory" exec="path_to_trajectory_node" name="path_to_trajectory" output="screen">
+      
+      <node pkg="objects_avoidance" exec="trajectory_shift_avoidance" name="trajectory_shift_avoidance" output="screen">
         <remap from="input" to="/planning/scenario_planning/lane_driving/behavior_planning/path_with_lane_id"/>
         <remap from="output" to="/planning/scenario_planning/trajectory"/>
-      </node>
+        <param from="$(find-pkg-share objects_avoidance)/config/trajectory_shift_avoidance.yaml"/>
+      </node> 
+
+      <!-- Customizable -->
 
     </group>
   </group>
@@ -208,8 +212,8 @@
     <param name="use_external_target_vel" value="true"/>
     <param name="external_target_vel" value="8.0"/>
     <param name="lookahead_gain" value="0.3"/>
-    <param name="lookahead_min_distance" value="4.0"/>
-    <param name="speed_proportional_gain" value="1.0"/>
+    <param name="lookahead_min_distance" value="2.0"/>
+    <param name="speed_proportional_gain" value="2.0"/>
     
     <remap from="input/kinematics" to="/localization/kinematic_state"/>
     <remap from="input/trajectory" to="/planning/scenario_planning/trajectory"/>
