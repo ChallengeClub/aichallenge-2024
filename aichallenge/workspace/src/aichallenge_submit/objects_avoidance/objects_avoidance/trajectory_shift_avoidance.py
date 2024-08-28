@@ -55,7 +55,7 @@ class TrajectoryShiftAvoidance(Node):
             object_x = msg.data[n*4 + 0]
             object_y = msg.data[n*4 + 1]
             object_z = msg.data[n*4 + 2]
-            object_radius = msg.data[n*4 + 2]
+            object_radius = msg.data[n*4 + 3]
             self.objects.append([object_x,
                                  object_y,
                                  object_z,
