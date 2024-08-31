@@ -9,6 +9,7 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/bool.hpp>
 
 namespace simple_pure_pursuit {
 
@@ -18,6 +19,7 @@ using autoware_auto_planning_msgs::msg::TrajectoryPoint;
 using geometry_msgs::msg::Pose;
 using geometry_msgs::msg::Twist;
 using nav_msgs::msg::Odometry;
+using std_msgs::msg::Bool;
 
 class SimplePurePursuit : public rclcpp::Node {
  public:
@@ -26,6 +28,7 @@ class SimplePurePursuit : public rclcpp::Node {
   // subscribers
   rclcpp::Subscription<Odometry>::SharedPtr sub_kinematics_;
   rclcpp::Subscription<Trajectory>::SharedPtr sub_trajectory_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr need_to_stop_sub_;
   
   // publishers
   rclcpp::Publisher<AckermannControlCommand>::SharedPtr pub_cmd_;
@@ -36,6 +39,7 @@ class SimplePurePursuit : public rclcpp::Node {
   // updated by subscribers
   Trajectory::SharedPtr trajectory_;
   Odometry::SharedPtr odometry_;
+  Bool::SharedPtr need_to_stop_;
 
 
 

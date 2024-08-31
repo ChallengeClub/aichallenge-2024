@@ -72,6 +72,8 @@ class MinimalSubscriber(Node):
             if(dist<distance_min):
                 distance_min =dist
                 point_min = i
+        if distance_min < 4:
+            return
         trajectory_point.pose.position.x -= (trajectory_point.pose.position.x - boundary[point_min]["x"])/(1.9+gain)
         trajectory_point.pose.position.y -= (trajectory_point.pose.position.y - boundary[point_min]["y"])/(1.9+gain)
                 
@@ -118,7 +120,7 @@ class MinimalSubscriber(Node):
                 if(dist<distance_min):
                     distance_min =dist
                     point_min = i
-            if(distance_min > 9.0):
+            if(distance_min > 8.0):
                 continue
 
             # <0 is right, then aviod object by driving at left side

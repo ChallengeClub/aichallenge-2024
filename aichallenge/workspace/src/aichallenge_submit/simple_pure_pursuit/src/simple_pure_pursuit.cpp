@@ -33,6 +33,8 @@ SimplePurePursuit::SimplePurePursuit()
     "input/kinematics", 1, [this](const Odometry::SharedPtr msg) { odometry_ = msg; });
   sub_trajectory_ = create_subscription<Trajectory>(
     "input/trajectory", 1, [this](const Trajectory::SharedPtr msg) { trajectory_ = msg; });
+  need_to_stop_sub_ = create_subscription<Bool>(
+    "/planning/mission_planning/need_to_stop", 1, [this](const Bool::SharedPtr msg) { need_to_stop_ = msg; });
 
   using namespace std::literals::chrono_literals;
   timer_ =
@@ -65,10 +67,11 @@ void SimplePurePursuit::onTimer()
   AckermannControlCommand cmd = zeroAckermannControlCommand(get_clock()->now());
   double target_longitudinal_vel = 0.0;
   if (
-    (closet_traj_point_idx == trajectory_->points.size() - 1) ||
-    (trajectory_->points.size() <= minimum_trj_point_size_)) {
+    ((closet_traj_point_idx == trajectory_->points.size() - 1) ||
+    (trajectory_->points.size() <= minimum_trj_point_size_)) &&
+    need_to_stop_->data) {
     cmd.longitudinal.speed = 0.0;
-    cmd.longitudinal.acceleration = -30.0;
+    cmd.longitudinal.acceleration = -60.0;
     RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000 /*ms*/, "reached to the goal");
   } else {
     // get closest trajectory point from current position

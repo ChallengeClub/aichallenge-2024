@@ -5,6 +5,7 @@ GoalPosePublisher::GoalPosePublisher() : Node("goal_pose_publisher")
     const auto qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
     ekf_trigger_client_ = this->create_client<std_srvs::srv::SetBool>("/localization/trigger_node");
     goal_publisher_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("/planning/mission_planning/goal", qos);
+    need_to_stop_publisher_ = this->create_publisher<std_msgs::msg::Bool>("/planning/mission_planning/need_to_stop", qos);
     route_state_subscriber_ = this->create_subscription<autoware_adapi_v1_msgs::msg::RouteState>(
         "/planning/mission_planning/route_state",
         rclcpp::QoS(rclcpp::KeepLast(10)).reliable().transient_local(),
@@ -113,12 +114,16 @@ void GoalPosePublisher::on_timer()
 
         goal_publisher_->publish(*msg);
         RCLCPP_INFO(this->get_logger(), "Publishing goal pose");
+
+        auto need_to_stop = std::make_shared<std_msgs::msg::Bool>();
+        need_to_stop->data = pit_stop_published;
+        need_to_stop_publisher_->publish(*need_to_stop);
     }
 }
 
 void GoalPosePublisher::onVehicleCondition(const std_msgs::msg::Int32::SharedPtr msg){
     vehicle_condition_ = msg->data;
-    if (vehicle_condition_ >= 1000 && lap_count_ <= 4){
+    if (vehicle_condition_ >= 780 && lap_count_ <= 4){
         pit_stop_flag = true;
     }
 }
@@ -150,6 +155,11 @@ void GoalPosePublisher::odometry_callback(const nav_msgs::msg::Odometry::SharedP
 
         goal_publisher_->publish(*goal_pose);
         RCLCPP_INFO(this->get_logger(), "Publishing half goal pose for loop");
+
+        auto need_to_stop = std::make_shared<std_msgs::msg::Bool>();
+        need_to_stop->data = pit_stop_published;
+        need_to_stop_publisher_->publish(*need_to_stop);
+                
         half_goal_pose_published_ = true;
         lap_count_ += 1;
     }
@@ -164,6 +174,11 @@ void GoalPosePublisher::odometry_callback(const nav_msgs::msg::Odometry::SharedP
 
         goal_publisher_->publish(*goal_pose);
         RCLCPP_INFO(this->get_logger(), "Publishing goal pose for loop");
+
+        auto need_to_stop = std::make_shared<std_msgs::msg::Bool>();
+        need_to_stop->data = pit_stop_published;
+        need_to_stop_publisher_->publish(*need_to_stop);
+        
         half_goal_pose_published_ = false;
     }
     // Publish pit_sotp_pose
@@ -180,6 +195,10 @@ void GoalPosePublisher::odometry_callback(const nav_msgs::msg::Odometry::SharedP
         goal_publisher_->publish(*goal_pose);
         RCLCPP_INFO(this->get_logger(), "Publishing goal pose for loop");
         pit_stop_published = true;  
+
+        auto need_to_stop = std::make_shared<std_msgs::msg::Bool>();
+        need_to_stop->data = pit_stop_published;
+        need_to_stop_publisher_->publish(*need_to_stop);
     }
     // Check vehicle condition and publish half goal pose
     if (vehicle_condition_ == 0 && pit_stop_published == true)
@@ -191,11 +210,15 @@ void GoalPosePublisher::odometry_callback(const nav_msgs::msg::Odometry::SharedP
 
         goal_publisher_->publish(*goal_pose);
         RCLCPP_INFO(this->get_logger(), "Publishing half goal pose for loop");
-        
+
         lap_count_ += 1;
         half_goal_pose_published_ = true;
         pit_stop_published = false;
         pit_stop_flag = false;
+
+        auto need_to_stop = std::make_shared<std_msgs::msg::Bool>();
+        need_to_stop->data = pit_stop_published;
+        need_to_stop_publisher_->publish(*need_to_stop);
     }
 }
 
