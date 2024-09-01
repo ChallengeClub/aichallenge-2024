@@ -210,6 +210,7 @@
     <param name="lookahead_gain" value="0.2"/>
     <param name="lookahead_min_distance" value="2.0"/>
     <param name="speed_proportional_gain" value="3.0"/>
+    <param name="steering_diff_gain" value="0.5"/>
     <remap from="input/kinematics" to="/localization/kinematic_state"/>
     <remap from="input/trajectory" to="/planning/scenario_planning/trajectory"/>
     <remap from="output/control_cmd" to="/control/command/control_cmd"/>

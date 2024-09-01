@@ -21,8 +21,10 @@ SimplePurePursuit::SimplePurePursuit()
   lookahead_gain_(declare_parameter<float>("lookahead_gain", 1.0)),
   lookahead_min_distance_(declare_parameter<float>("lookahead_min_distance", 1.0)),
   speed_proportional_gain_(declare_parameter<float>("speed_proportional_gain", 1.0)),
+  steering_diff_gain_(declare_parameter<float>("steering_diff_gain", 0.0)),
   use_external_target_vel_(declare_parameter<bool>("use_external_target_vel", false)),
-  external_target_vel_(declare_parameter<float>("external_target_vel", 0.0))
+  external_target_vel_(declare_parameter<float>("external_target_vel", 0.0)),
+  last_steering_angle(0.0)
 {
   this->declare_parameter("minimum_trj_point_size", 10);
   minimum_trj_point_size_ = this->get_parameter("minimum_trj_point_size").as_int();
@@ -55,19 +57,20 @@ AckermannControlCommand zeroAckermannControlCommand(rclcpp::Time stamp)
 
 void SimplePurePursuit::onTimer()
 {
+
   // check data
   if (!subscribeMessageAvailable()) {
     return;
   }
 
-  size_t closet_traj_point_idx =
+  size_t closest_traj_point_idx =
     findNearestIndex(trajectory_->points, odometry_->pose.pose.position);
 
   // publish zero command
   AckermannControlCommand cmd = zeroAckermannControlCommand(get_clock()->now());
   double target_longitudinal_vel = 0.0;
   if (
-    ((closet_traj_point_idx == trajectory_->points.size() - 1) ||
+    ((closest_traj_point_idx == trajectory_->points.size() - 1) ||
     (trajectory_->points.size() <= minimum_trj_point_size_)) &&
     need_to_stop_->data) {
     cmd.longitudinal.speed = 0.0;
@@ -75,18 +78,18 @@ void SimplePurePursuit::onTimer()
     RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000 /*ms*/, "reached to the goal");
   } else {
     // get closest trajectory point from current position
-    TrajectoryPoint closet_traj_point = trajectory_->points.at(closet_traj_point_idx);
+    TrajectoryPoint closest_traj_point = trajectory_->points.at(closest_traj_point_idx);
 
     // calc longitudinal speed and acceleration
     target_longitudinal_vel =
-      use_external_target_vel_ ? external_target_vel_ : closet_traj_point.longitudinal_velocity_mps;
+      use_external_target_vel_ ? external_target_vel_ : closest_traj_point.longitudinal_velocity_mps;
     double current_longitudinal_vel = odometry_->twist.twist.linear.x;
 
     cmd.longitudinal.speed = target_longitudinal_vel;
     cmd.longitudinal.acceleration =
       speed_proportional_gain_ * (target_longitudinal_vel - current_longitudinal_vel);
   }
-  // calc lateral control
+  // calc lateral control　★ここから操舵制御
   //// calc lookahead distance
   double lookahead_distance = lookahead_gain_ * target_longitudinal_vel + lookahead_min_distance_;
   
@@ -97,7 +100,7 @@ void SimplePurePursuit::onTimer()
                   wheel_base_ / 2.0 * std::sin(odometry_->pose.pose.orientation.z);
   //// search lookahead point
   auto lookahead_point_itr = std::find_if(
-    trajectory_->points.begin() + closet_traj_point_idx, trajectory_->points.end(),
+    trajectory_->points.begin() + closest_traj_point_idx, trajectory_->points.end(),
     [&](const TrajectoryPoint & point) {
       return std::hypot(point.pose.position.x - rear_x, point.pose.position.y - rear_y) >=
               lookahead_distance;
@@ -108,12 +111,32 @@ void SimplePurePursuit::onTimer()
   double lookahead_point_x = lookahead_point_itr->pose.position.x;
   double lookahead_point_y = lookahead_point_itr->pose.position.y;
 
-  // calc steering angle for lateral control
+  // calc steering angle for lateral control　★操舵角を求める ここにフィードバックを入れたほうが良いかも。
+  // 現在の操舵角と、目標操舵角の差、および、差が大きくなっていれば小さくするために、PD制御を入れる。
   double alpha = std::atan2(lookahead_point_y - rear_y, lookahead_point_x - rear_x) -
                   tf2::getYaw(odometry_->pose.pose.orientation);
   cmd.lateral.steering_tire_angle =
     std::atan2(2.0 * wheel_base_ * std::sin(alpha), lookahead_distance);
+// 操舵角の指示しかなく、実際のステアリングの制御はどこだ？
+//  操舵角指示への追従制御を触れない場合、指示角を調整するのが良さそう
+//  前回指示角と今回指示角の増減から、指示を調整する。差が大きくなっていれば、その差分を加える。
+//  差が小さくなっていれば、維持すれば良いかな？
+//  走行速度を考慮したゲイン調整については、速度による操舵遅れも操舵指示の大きさの変化に反映済みと考えられるので、不要と考える。
+// ここから追加
+  double steering_diff;
 
+  if ((last_steering_angle >= 0 && cmd.lateral.steering_tire_angle >= 0)
+   || (last_steering_angle < 0 && cmd.lateral.steering_tire_angle < 0)) { // 前回の操舵向きと同じ
+    steering_diff = abs(cmd.lateral.steering_tire_angle) - abs(last_steering_angle);
+    if (steering_diff > 0) { // 前回よりも指示値が大きくなった、すなわち、追従できていない。
+      if (last_steering_angle >= 0) 
+        cmd.lateral.steering_tire_angle += steering_diff * steering_diff_gain_;
+      else
+        cmd.lateral.steering_tire_angle -= steering_diff * steering_diff_gain_;
+    }
+  }
+  last_steering_angle = cmd.lateral.steering_tire_angle;
+// 追加終わり
   pub_cmd_->publish(cmd);
 }
 
