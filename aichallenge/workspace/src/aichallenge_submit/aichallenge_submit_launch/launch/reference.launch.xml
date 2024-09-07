@@ -212,7 +212,8 @@
 
     <remap from="input/kinematics" to="/localization/kinematic_state"/>
     <remap from="input/trajectory" to="/planning/scenario_planning/trajectory"/>
-    <remap from="output/control_cmd" to="/control/command/control_cmd"/>
+    <!-- <remap from="output/control_cmd" to="/control/command/control_cmd"/> -->
+    <remap from="output/control_cmd" to="/control/command/pre_control_cmd"/>
   </node>
 
   <!-- Map -->

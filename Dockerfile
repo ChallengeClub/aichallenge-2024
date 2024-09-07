@@ -8,11 +8,17 @@ RUN apt-get -y install wmctrl
 RUN apt-get -y install ros-humble-rqt-tf-tree
 RUN apt-get -y install ros-humble-rqt-graph
 
+
 # PATH="$PATH:/root/.local/bin"
 # PATH="/usr/local/cuda/bin:$PATH"
 ENV XDG_RUNTIME_DIR=/tmp/xdg
 ENV ROS_LOCALHOST_ONLY=1
 ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+
+# ----add by kiws
+RUN python3 -m pip install pygame
+RUN python3 -m pip install onnxruntime
+# ----
 
 FROM common AS dev
 

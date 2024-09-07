@@ -12,3 +12,31 @@ Toward the competition, we will update the following pages to provide informatio
 
 - [日本語ページ](https://automotiveaichallenge.github.io/aichallenge-documentation-2024/)
 - [English Page](https://automotiveaichallenge.github.io/aichallenge-documentation-2024/en/)
+
+## コントローラ操作メモ
+
+コントローラ：
+https://www.elecom.co.jp/products/JC-U4113SBK.html
+
+## 手順
+
+Dockerビルド
+```
+$ cd ~/aichallenge-2024
+$ ./docker_build.sh dev
+```
+
+Dcokerコンテナ起動
+```
+$ ./docker_run.sh dev gpu
+```
+
+Dcokerコンテナ内で以下実行. シミュレータが起動し、コントローラ操作できる。
+```
+$ cd /aichallenge/
+$ ./build_autoware.bash
+```
+
+```
+$ ./run_controller.bash
+```

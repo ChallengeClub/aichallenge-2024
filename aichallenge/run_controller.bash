@@ -18,7 +18,8 @@ sudo sysctl -w net.core.rmem_max=2147483647 >/dev/null
 echo "Start AWSIM"
 $AWSIM_DIRECTORY/AWSIM.x86_64 >/dev/null &
 PID_AWSIM=$!
-sleep 20
+# sleep 20
+sleep 10
 
 # Start Autoware
 echo "Start Autoware"
@@ -48,7 +49,14 @@ sleep 1
 # Start driving and wait for the simulation to finish
 echo "Waiting for the simulation"
 ros2 topic pub --once /control/control_mode_request_topic std_msgs/msg/Bool '{data: true}' >/dev/null
+sleep 1
+
+# Controler Setting
+echo "Controler Setting"
+# gnome-terminal -- bash -c "ros2 run control_command_setter controller_cmd_setter; bash";
+ros2 run control_command_setter controller_cmd_setter >/dev/null
 wait $PID_AWSIM
+
 
 # Stop recording rviz2
 echo "Stop screen capture"
