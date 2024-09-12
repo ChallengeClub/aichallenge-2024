@@ -18,6 +18,9 @@ Toward the competition, we will update the following pages to provide informatio
 コントローラ：
 https://www.elecom.co.jp/products/JC-U4113SBK.html
 
+コントローラアサインはこちらを参照：
+https://qiita.com/bushio/items/8b2c86162e77c7bf2ffe
+
 ## 手順
 
 Dockerビルド
