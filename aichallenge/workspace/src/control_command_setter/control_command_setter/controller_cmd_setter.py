@@ -8,6 +8,7 @@ import rclpy
 import pygame
 from rclpy.node import Node
 from autoware_auto_control_msgs.msg import AckermannControlCommand
+from autoware_auto_vehicle_msgs.msg import GearCommand
 
 class Controller_cmd_setter(Node):
     def __init__(self, joystick=None):
@@ -18,7 +19,12 @@ class Controller_cmd_setter(Node):
 
         # raw_vehicle_cmd_converter にトピックを送信
         self.vehicle_inputs_pub_ = self.create_publisher(AckermannControlCommand, "/control/command/control_cmd", 1)
-
+    
+        # Gear用パブリッシャーの作成
+        self.gear_pub = self.create_publisher(GearCommand, '/control/command/gear_cmd',1)
+        
+        self.gear_cmd = GearCommand()
+        
         # 初期値を時速 20km/h とする
         self.target_vel = 20.0
 
@@ -37,6 +43,7 @@ class Controller_cmd_setter(Node):
         
         # 車両特性
         # https://automotiveaichallenge.github.io/aichallenge-documentation-2024/specifications/simulator.html
+        self.max_vel      = 30    # kmph
         self.max_acc      = 3.2   # 駆動時最大加速度 3.2 m/s^2
         self.max_stearang = 80    # Max Steer Angle Input 80
         self.wheel_base = 1.087   # ホイールの長さ[m]
@@ -63,16 +70,31 @@ class Controller_cmd_setter(Node):
                 sys.exit()
 	
 	# ** 速度制御
-	# Yボタン: ブレーキ
+	# Xボタン: ブレーキ
         if self.joystick.get_button(0): 
             self.target_vel = 0
 	
 	# Aボタン: 加速
         if self.joystick.get_button(2): 
-            self.target_vel += self.max_acc  * self.timer_period * 3.6
+            self.target_vel += min(self.max_acc  * self.timer_period * 3.6,self.max_vel)
         else:
-            self.target_vel -= self.max_acc  * self.timer_period * 3.6
+            self.target_vel -= max(self.max_acc  * self.timer_period * 3.6,0)
+        
+        # Yボタン: 後退
+        if self.joystick.get_button(1):
+            self.target_vel = -1.0
             
+        # ギア制御
+        # self.gear_cmd.stamp = rospy.Time.now()
+        self.gear_cmd.stamp =  self.get_clock().now().to_msg()
+
+        if self.target_vel < 0:
+            # ギア：Rにする
+            self.gear_cmd.command = GearCommand.REVERSE  # バックギアに設定
+        else:
+     	    # ギア：D
+            self.gear_cmd.command = GearCommand.DRIVE  # ドライブ
+       
 	# Rボタンで速度を 110 % 
         # if self.joystick.get_button(5): 
         #     self.target_vel = self.target_vel * 1.10
@@ -158,6 +180,10 @@ class Controller_cmd_setter(Node):
 
         # トピックを送信
         self.vehicle_inputs_pub_.publish(msg)
+
+        # メッセージをパブリッシュ
+        self.gear_pub.publish(self.gear_cmd)
+        
 
 def main(args=None):
     print('Hi from Controller_cmd_setter.')
