@@ -10,6 +10,31 @@ from rclpy.node import Node
 from autoware_auto_control_msgs.msg import AckermannControlCommand
 from autoware_auto_vehicle_msgs.msg import GearCommand
 
+"""
+Logitech Driveing Force Proのアサイン
+Axis 0: -32767 - 32767 Steering 左Maxが-32767
+Axis 1: -32767 - 32767 accel 32767が開放（踏んでない位置）
+Axis 2: -32767 - 32767 break 32767が開放（踏んでない位置）
+Axis 3: +キーの横方向 -1, 0, 1 左が-1
+Axis 4: +キーの縦方向 -1, 0, 1 上が-1
+Buttons
+0 ×
+1 □
+2 ○
+3 △
+4 R
+5 L
+6 R2
+7 L2
+8 SELECT
+9 START
+10 R3
+11 L3
+12 Shift +
+13 Shift -
+
+"""
+
 class Controller_cmd_setter(Node):
     def __init__(self, joystick=None):
         super().__init__('Controller_cmd_setter')
@@ -60,6 +85,9 @@ class Controller_cmd_setter(Node):
             print("ジョイスティックが見つかりません。")
             sys.exit()
         self.joystick = joystick
+
+    def normalize_handle(self, value):
+        return value / 32767.0 * (math.pi / 180.0 * self.max_stearang) # プラマイ32767の範囲だった。操舵角の単位はrad。車の仕様で操舵角はプラマイ80度。
 
     # コントローラーからの入力を更新
     def timer_callback(self):
@@ -145,7 +173,8 @@ class Controller_cmd_setter(Node):
             if self.manual_steering:
                 self.target_angle = joystic_y * self.steering_scale
                 self.target_angle = max(min(self.target_angle, self.max_stearang ), -self.max_stearang)
-                self.target_steering = self.target_angle /(self.wheel_base * 360)
+#                self.target_steering = self.target_angle /(self.wheel_base * 360)
+                self.target_steering = self.normalize_handle(joystic_y)
 
         if self.joystick.get_axis(3):
             self.target_vel  =  self.target_vel + self.joystick.get_axis(3) * (-1.0)
