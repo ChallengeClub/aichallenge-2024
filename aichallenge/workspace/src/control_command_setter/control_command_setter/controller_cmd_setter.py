@@ -65,6 +65,9 @@ class Controller_cmd_setter(Node):
         # 現在のステアリング値
         self.target_steering = 0.0
         self.target_angle = 0.0
+
+        # 加速度
+        self.accel = 0.0
         
         # 車両特性
         # https://automotiveaichallenge.github.io/aichallenge-documentation-2024/specifications/simulator.html
@@ -77,7 +80,7 @@ class Controller_cmd_setter(Node):
         self.steering_scale = self.max_stearang 
         self.button_cout = 0
 
-        # 0.1 秒ごとにコントローラーの入力を更新
+        # 0.1 秒ごとにコントローラーの入力を更新　■これ、多分遅い。
         self.timer_period = 0.1
         self.timer = self.create_timer(self.timer_period, self.timer_callback)
 
@@ -86,8 +89,11 @@ class Controller_cmd_setter(Node):
             sys.exit()
         self.joystick = joystick
 
-    def normalize_handle(self, value):
-        return value / 32767.0 * (math.pi / 180.0 * self.max_stearang) # プラマイ32767の範囲だった。操舵角の単位はrad。車の仕様で操舵角はプラマイ80度。
+    def cnv_handle(self, value):
+        return - value * (math.pi / 180.0 * self.max_stearang) # プラマイ32767の範囲だった。操舵角の単位はrad。車の仕様で操舵角はプラマイ80度。
+
+    def cnv_accel(self, value):
+        return (1.0 - value) / 2.0 * self.max_acc # 車両のパラメータから、最大加速度は、3.2m/s^2
 
     # コントローラーからの入力を更新
     def timer_callback(self):
@@ -162,6 +168,8 @@ class Controller_cmd_setter(Node):
             # joystic_x, joystic_y = self.joystick.get_hat(0)
             joystic_x = -self.joystick.get_axis(2) # ELECOM JC-U4113S 
             joystic_y = -self.joystick.get_axis(0) # ELECOM JC-U4113S
+            gas_pedal = self.joystick.get_axis(1)
+            steering_wheel = self.joystick.get_axis(0)
             self.target_vel  =  self.target_vel + joystic_x * 1.0
 
             # LRキー押されていたらステアリングを大きくする
@@ -174,20 +182,24 @@ class Controller_cmd_setter(Node):
                 self.target_angle = joystic_y * self.steering_scale
                 self.target_angle = max(min(self.target_angle, self.max_stearang ), -self.max_stearang)
 #                self.target_steering = self.target_angle /(self.wheel_base * 360)
-                self.target_steering = self.normalize_handle(joystic_y)
+                self.target_steering = self.cnv_handle(steering_wheel)
+                self.accel = self.cnv_accel(gas_pedal)
 
-        if self.joystick.get_axis(3):
-            self.target_vel  =  self.target_vel + self.joystick.get_axis(3) * (-1.0)
+#        if self.joystick.get_axis(3):
+#            self.target_vel  =  self.target_vel + self.joystick.get_axis(3) * (-1.0)
     
         self.target_vel = min(max( self.target_vel, -10), 200)
-        self.get_logger().info("target_vel:{} steering: {} steering_mode: {}".format(self.target_vel,
-                                                                   self.target_angle,
-                                                                   self.manual_steering
-                                                                   ))
+#        self.get_logger().info("accel:{} target_vel:{} steering: {} steering_mode: {}".format(self.accel, self.target_vel,
+#                                                                   self.target_angle,
+#                                                                   self.manual_steering
+#                                                                   ))
+        self.get_logger().info("gas_pedal:{} accel:{} steering_wheel:{} steering: {}".format(gas_pedal, self.accel, steering_wheel, self.target_angle))
+
     # 制御コマンドを送受信
     def onTrigger(self, msg):
         # km/h ->m/s
-        target_vel = self.target_vel / 3.6
+#        target_vel = self.target_vel / 3.6
+        target_vel = self.max_vel / 3.6
 
         # 現在の速度を逆計算 
         current_longitudinal_vel = msg.longitudinal.speed - (msg.longitudinal.acceleration / self.speed_proportional_gain_) 
@@ -198,7 +210,8 @@ class Controller_cmd_setter(Node):
         msg.longitudinal.speed = float(target_vel)
 
         # accel を計算
-        msg.longitudinal.acceleration = float(self.speed_proportional_gain_ * (target_vel - current_longitudinal_vel))
+#        msg.longitudinal.acceleration = float(self.speed_proportional_gain_ * (target_vel - current_longitudinal_vel))
+        msg.longitudinal.acceleration = self.accel
 
         # 自動ステアリングモードではステアリング値を取得
         if not (self.manual_steering):
