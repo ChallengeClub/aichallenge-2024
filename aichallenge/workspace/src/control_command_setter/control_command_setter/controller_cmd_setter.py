@@ -61,6 +61,9 @@ class Controller_cmd_setter(Node):
 
         # ステアリングを手動にするか
         self.manual_steering = True # False
+
+        # バックギア状態
+        self.back_gear = False
         
         # 現在のステアリング値
         self.target_steering = 0.0
@@ -119,6 +122,28 @@ class Controller_cmd_setter(Node):
             self.target_vel = -1.0
             
         # ギア制御
+        """
+        gear = self.gear_cmd.command
+        if self.joystick.get_button(12):#Shift +
+            if self.button_cout > 2: #チャタリング防止
+                self.button_cout = 0
+                gear += 1
+        elif self.joystick.get_button(13):#Shift -
+            if self.button_cout > 2: #チャタリング防止
+                self.button_cout = 0
+                gear -= 1
+        self.gear_cmd.command = min(255, max(gear, 0))
+        """
+        if self.joystick.get_button(12):#Shift +
+            if self.button_cout > 2: #チャタリング防止
+                self.button_cout = 0
+                self.back_gear = False
+        elif self.joystick.get_button(13):#Shift -
+            if self.button_cout > 2: #チャタリング防止
+                self.button_cout = 0
+                self.back_gear = True
+
+        """
         # self.gear_cmd.stamp = rospy.Time.now()
         self.gear_cmd.stamp =  self.get_clock().now().to_msg()
 
@@ -128,6 +153,7 @@ class Controller_cmd_setter(Node):
         else:
      	    # ギア：D
             self.gear_cmd.command = GearCommand.DRIVE  # ドライブ
+        """
        
 	# Rボタンで速度を 110 % 
         # if self.joystick.get_button(5): 
@@ -166,11 +192,12 @@ class Controller_cmd_setter(Node):
         # Joystick の値を反映
         if self.joystick.get_hat(0):
             # joystic_x, joystic_y = self.joystick.get_hat(0)
-            joystic_x = -self.joystick.get_axis(2) # ELECOM JC-U4113S 
-            joystic_y = -self.joystick.get_axis(0) # ELECOM JC-U4113S
+#            joystic_x = -self.joystick.get_axis(2) # ELECOM JC-U4113S 
+#            joystic_y = -self.joystick.get_axis(0) # ELECOM JC-U4113S
             gas_pedal = self.joystick.get_axis(1)
+            break_pedal = self.joystick.get_axis(2)
             steering_wheel = self.joystick.get_axis(0)
-            self.target_vel  =  self.target_vel + joystic_x * 1.0
+#            self.target_vel  =  self.target_vel + joystic_x * 1.0
 
             # LRキー押されていたらステアリングを大きくする
             if self.joystick.get_button(4) or self.joystick.get_button(5): 
@@ -179,11 +206,26 @@ class Controller_cmd_setter(Node):
                 self.steering_scale = self.max_stearang * 0.3    
             
             if self.manual_steering:
-                self.target_angle = joystic_y * self.steering_scale
+#                self.target_angle = joystic_y * self.steering_scale
                 self.target_angle = max(min(self.target_angle, self.max_stearang ), -self.max_stearang)
 #                self.target_steering = self.target_angle /(self.wheel_base * 360)
                 self.target_steering = self.cnv_handle(steering_wheel)
-                self.accel = self.cnv_accel(gas_pedal)
+                #誤差のためか、ブレーキ、アクセルともしきい値以下は０に設定する。1.0のときに、変換後の値が０になる
+                if gas_pedal > 0.999:
+                    gas_pedal = 1.0
+                if break_pedal > 0.999:
+                    break_pedal = 1.0
+                if break_pedal < 1.0:
+                    self.accel = -self.cnv_accel(break_pedal) * 10
+                    self.target_vel = 0
+                else:
+                    self.accel = self.cnv_accel(gas_pedal)
+                    self.target_vel = self.max_vel / 3.6
+                self.gear_cmd.command = 2 #DRIVE
+                if self.back_gear:
+                    self.gear_cmd.command = 20 #REVERSE
+#                    self.accel *= -1
+                    self.target_vel *= -1
 
 #        if self.joystick.get_axis(3):
 #            self.target_vel  =  self.target_vel + self.joystick.get_axis(3) * (-1.0)
@@ -193,13 +235,13 @@ class Controller_cmd_setter(Node):
 #                                                                   self.target_angle,
 #                                                                   self.manual_steering
 #                                                                   ))
-        self.get_logger().info("gas_pedal:{} accel:{} steering_wheel:{} steering: {}".format(gas_pedal, self.accel, steering_wheel, self.target_angle))
+        self.get_logger().info("gas_pedal:{} accel:{} gear_cmd:{} steering: {}".format(gas_pedal, self.accel, self.gear_cmd.command, self.target_angle))
 
     # 制御コマンドを送受信
     def onTrigger(self, msg):
         # km/h ->m/s
 #        target_vel = self.target_vel / 3.6
-        target_vel = self.max_vel / 3.6
+#        target_vel = self.max_vel / 3.6
 
         # 現在の速度を逆計算 
         current_longitudinal_vel = msg.longitudinal.speed - (msg.longitudinal.acceleration / self.speed_proportional_gain_) 
@@ -207,7 +249,7 @@ class Controller_cmd_setter(Node):
         if self.log:
             self.get_logger().info("current vel {}".format(current_longitudinal_vel * 3.6))
         
-        msg.longitudinal.speed = float(target_vel)
+        msg.longitudinal.speed = float(self.target_vel)
 
         # accel を計算
 #        msg.longitudinal.acceleration = float(self.speed_proportional_gain_ * (target_vel - current_longitudinal_vel))
