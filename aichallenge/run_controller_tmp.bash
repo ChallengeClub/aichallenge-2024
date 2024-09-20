@@ -34,10 +34,10 @@ PID_ROSBAG=$!
 sleep 5
 
 # Start recording rviz2
-# echo "Start screen capture"
-# until (ros2 service type /debug/service/capture_screen >/dev/null); do
-#     sleep 5
-# done
+echo "Start screen capture"
+until (ros2 service type /debug/service/capture_screen >/dev/null); do
+    sleep 5
+done
 
 # Move windows
 wmctrl -a "RViz" && wmctrl -r "RViz" -e 0,0,0,1920,1043
@@ -58,26 +58,3 @@ ros2 run control_command_setter controller_cmd_setter >/dev/null
 wait $PID_AWSIM
 
 
-# Stop recording rviz2
-# echo "Stop screen capture"
-# ros2 service call /debug/service/capture_screen std_srvs/srv/Trigger >/dev/null
-# sleep 10
-
-# Stop recording rosbag
-# echo "Stop rosbag"
-# kill $PID_ROSBAG
-# wait $PID_ROSBAG
-
-# Stop Autoware
-# echo "Stop Autoware"
-# kill $PID_AUTOWARE
-# wait $PID_AUTOWARE
-
-# Convert result
-# echo "Convert result"
-# python3 /aichallenge/workspace/src/aichallenge_system/script/result-converter.py 60 11
-
-# Compress rosbag
-# echo "Compress rosbag"
-# tar -czf rosbag2_autoware.tar.gz rosbag2_autoware
-# rm -rf rosbag2_autoware

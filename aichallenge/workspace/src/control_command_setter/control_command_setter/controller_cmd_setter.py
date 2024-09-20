@@ -76,9 +76,11 @@ class Controller_cmd_setter(Node):
 	
 	# Aボタン: 加速
         if self.joystick.get_button(2): 
-            self.target_vel += min(self.max_acc  * self.timer_period * 3.6,self.max_vel)
+            self.target_vel += self.max_acc  * self.timer_period * 3.6
+            self.target_vel =  min(self.target_vel, self.max_vel)
         else:
-            self.target_vel -= max(self.max_acc  * self.timer_period * 3.6,0)
+            self.target_vel -= self.max_acc  * self.timer_period * 3.6
+            self.target_vel = max(self.target_vel,0)
         
         # Yボタン: 後退
         if self.joystick.get_button(1):
@@ -90,7 +92,8 @@ class Controller_cmd_setter(Node):
 
         if self.target_vel < 0:
             # ギア：Rにする
-            self.gear_cmd.command = GearCommand.REVERSE  # バックギアに設定
+            # self.gear_cmd.command = GearCommand.REVERSE  # バックギアに設定
+            self.gear_cmd.command = 20  # バックギアに設定
         else:
      	    # ギア：D
             self.gear_cmd.command = GearCommand.DRIVE  # ドライブ
