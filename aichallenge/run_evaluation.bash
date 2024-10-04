@@ -17,13 +17,15 @@ sudo sysctl -w net.core.rmem_max=2147483647 >/dev/null
 echo "Start AWSIM"
 $AWSIM_DIRECTORY/AWSIM.x86_64 >/dev/null &
 PID_AWSIM=$!
-sleep 20
+##sleep 20
+sleep 5
 
 # Start Autoware
 echo "Start Autoware"
 ros2 launch aichallenge_system_launch aichallenge_system.launch.xml >autoware.log 2>&1 &
 PID_AUTOWARE=$!
-sleep 10
+##sleep 10
+sleep 5
 
 # Start recording rosbag
 echo "Start rosbag"
@@ -76,7 +78,8 @@ wait $PID_AWSIM
 # Stop recording rviz2
 echo "Stop screen capture"
 ros2 service call /debug/service/capture_screen std_srvs/srv/Trigger >/dev/null
-sleep 10
+##sleep 10
+sleep 5
 
 # Stop recording rosbag
 echo "Stop rosbag"

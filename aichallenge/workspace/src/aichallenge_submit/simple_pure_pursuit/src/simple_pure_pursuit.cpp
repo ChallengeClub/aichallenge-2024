@@ -21,9 +21,11 @@ SimplePurePursuit::SimplePurePursuit()
   lookahead_gain_(declare_parameter<float>("lookahead_gain", 1.0)),
   lookahead_min_distance_(declare_parameter<float>("lookahead_min_distance", 1.0)),
   speed_proportional_gain_(declare_parameter<float>("speed_proportional_gain", 1.0)),
+  steering_diff_gain_(declare_parameter<float>("steering_diff_gain", 0.5)),
   use_external_target_vel_(declare_parameter<bool>("use_external_target_vel", false)),
   external_target_vel_(declare_parameter<float>("external_target_vel", 0.0)),
-  steering_tire_angle_gain_(declare_parameter<float>("steering_tire_angle_gain", 1.0))
+  steering_tire_angle_gain_(declare_parameter<float>("steering_tire_angle_gain", 1.0)),
+  last_steering_angle(0.0)
 {
   pub_cmd_ = create_publisher<AckermannControlCommand>("output/control_cmd", 1);
   pub_raw_cmd_ = create_publisher<AckermannControlCommand>("output/raw_control_cmd", 1);
@@ -63,7 +65,7 @@ void SimplePurePursuit::onTimer()
 
   // publish zero command
   AckermannControlCommand cmd = zeroAckermannControlCommand(get_clock()->now());
-
+  double target_longitudinal_vel = 0.0; // ■操舵を停止前も有効にするため、この初期化を追加
   if (
     (closet_traj_point_idx == trajectory_->points.size() - 1) ||
     (trajectory_->points.size() <= 2)) {
@@ -82,45 +84,70 @@ void SimplePurePursuit::onTimer()
     cmd.longitudinal.speed = target_longitudinal_vel;
     cmd.longitudinal.acceleration =
       speed_proportional_gain_ * (target_longitudinal_vel - current_longitudinal_vel);
+  } //■originalは、ここでクローズせず、操舵を行わないようになっていた。ここでcloseすることで、完全停止するまで操舵を続ける。
 
-    // calc lateral control
-    //// calc lookahead distance
-    double lookahead_distance = lookahead_gain_ * target_longitudinal_vel + lookahead_min_distance_;
-    //// calc center coordinate of rear wheel
-    double rear_x = odometry_->pose.pose.position.x -
-                    wheel_base_ / 2.0 * std::cos(odometry_->pose.pose.orientation.z);
-    double rear_y = odometry_->pose.pose.position.y -
-                    wheel_base_ / 2.0 * std::sin(odometry_->pose.pose.orientation.z);
-    //// search lookahead point
-    auto lookahead_point_itr = std::find_if(
-      trajectory_->points.begin() + closet_traj_point_idx, trajectory_->points.end(),
-      [&](const TrajectoryPoint & point) {
-        return std::hypot(point.pose.position.x - rear_x, point.pose.position.y - rear_y) >=
-               lookahead_distance;
-      });
-    if (lookahead_point_itr == trajectory_->points.end()) {
-      lookahead_point_itr = trajectory_->points.end() - 1;
-    }
-    double lookahead_point_x = lookahead_point_itr->pose.position.x;
-    double lookahead_point_y = lookahead_point_itr->pose.position.y;
-
-    geometry_msgs::msg::PointStamped lookahead_point_msg;
-    lookahead_point_msg.header.stamp = get_clock()->now();
-    lookahead_point_msg.header.frame_id = "map";
-    lookahead_point_msg.point.x = lookahead_point_x;
-    lookahead_point_msg.point.y = lookahead_point_y;
-    lookahead_point_msg.point.z = 0;
-    pub_lookahead_point_->publish(lookahead_point_msg);
-
-    // calc steering angle for lateral control
-    double alpha = std::atan2(lookahead_point_y - rear_y, lookahead_point_x - rear_x) -
-                   tf2::getYaw(odometry_->pose.pose.orientation);
-    cmd.lateral.steering_tire_angle =
-      steering_tire_angle_gain_ * std::atan2(2.0 * wheel_base_ * std::sin(alpha), lookahead_distance);
+  // calc lateral control
+  //// calc lookahead distance
+  double lookahead_distance = lookahead_gain_ * target_longitudinal_vel + lookahead_min_distance_;
+  //// calc center coordinate of rear wheel
+  double rear_x = odometry_->pose.pose.position.x -
+                  wheel_base_ / 2.0 * std::cos(odometry_->pose.pose.orientation.z);
+  double rear_y = odometry_->pose.pose.position.y -
+                  wheel_base_ / 2.0 * std::sin(odometry_->pose.pose.orientation.z);
+  //// search lookahead point
+  auto lookahead_point_itr = std::find_if(
+    trajectory_->points.begin() + closet_traj_point_idx, trajectory_->points.end(),
+    [&](const TrajectoryPoint & point) {
+      return std::hypot(point.pose.position.x - rear_x, point.pose.position.y - rear_y) >=
+              lookahead_distance;
+    });
+  if (lookahead_point_itr == trajectory_->points.end()) {
+    lookahead_point_itr = trajectory_->points.end() - 1;
   }
+  double lookahead_point_x = lookahead_point_itr->pose.position.x;
+  double lookahead_point_y = lookahead_point_itr->pose.position.y;
+
+  geometry_msgs::msg::PointStamped lookahead_point_msg;
+  lookahead_point_msg.header.stamp = get_clock()->now();
+  lookahead_point_msg.header.frame_id = "map";
+  lookahead_point_msg.point.x = lookahead_point_x;
+  lookahead_point_msg.point.y = lookahead_point_y;
+  lookahead_point_msg.point.z = 0;
+  pub_lookahead_point_->publish(lookahead_point_msg);
+
+  // calc steering angle for lateral control
+  double alpha = std::atan2(lookahead_point_y - rear_y, lookahead_point_x - rear_x) -
+                  tf2::getYaw(odometry_->pose.pose.orientation);
+  cmd.lateral.steering_tire_angle =
+    steering_tire_angle_gain_ * std::atan2(2.0 * wheel_base_ * std::sin(alpha), lookahead_distance);
+
+  //  上記で、simple_pure_pursuitによる操舵角を算出
+  //　実際のステアリングの制御は触れるファイルとしては存在指定なさそう、すなわち、
+  //  操舵角指示への追従制御を触れないので、指示角を調整するのが良さそう。
+  //  前回指示角と今回指示角の増減から、指示を調整する。差が大きくなっていれば、その差分を加える。
+  //  差が小さくなっていれば、もとの指示値のままとする。
+  //  走行速度を考慮したゲイン調整については、速度による操舵遅れも操舵指示の大きさの変化に反映済みと考えて、不要とする。
+
+  // ここから追加
+  double steering_diff;
+
+  if ((last_steering_angle >= 0 && cmd.lateral.steering_tire_angle >= 0)
+   || (last_steering_angle <  0 && cmd.lateral.steering_tire_angle <  0)) { // 前回の操舵向きと同じ
+    steering_diff = abs(cmd.lateral.steering_tire_angle) - abs(last_steering_angle);
+    if (steering_diff > 0) { // 前回よりも指示値が大きくなった、すなわち、追従できていない。
+      if (last_steering_angle >= 0) 
+        cmd.lateral.steering_tire_angle += steering_diff * steering_diff_gain_;
+      else
+        cmd.lateral.steering_tire_angle -= steering_diff * steering_diff_gain_;
+    }
+  }
+  last_steering_angle = cmd.lateral.steering_tire_angle;
+  // 追加終わり
+
+//  } // ■originalはここにあった。
   pub_cmd_->publish(cmd);
   cmd.lateral.steering_tire_angle /=  steering_tire_angle_gain_;
-  pub_raw_cmd_->publish(cmd);
+  pub_raw_cmd_->publish(cmd);//■これはなんだ？
 }
 
 bool SimplePurePursuit::subscribeMessageAvailable()
