@@ -23,6 +23,9 @@ SimplePurePursuit::SimplePurePursuit()
   speed_proportional_gain_(declare_parameter<float>("speed_proportional_gain", 1.0)),
   use_external_target_vel_(declare_parameter<bool>("use_external_target_vel", false)),
   external_target_vel_(declare_parameter<float>("external_target_vel", 0.0)),
+  use_steer_lmt_(declare_parameter<bool>("use_steer_lmt", false)),
+  steer_lmt_(declare_parameter<float>("steer_lmt", 1.39556)),
+  steer_v_lmt_(declare_parameter<float>("steer_v_lmt", 0.0105)),  // 0.35rad / s * 30ms
   steering_tire_angle_gain_(declare_parameter<float>("steering_tire_angle_gain", 1.0))
 {
   pub_cmd_ = create_publisher<AckermannControlCommand>("output/control_cmd", 1);
@@ -78,6 +81,7 @@ void SimplePurePursuit::onTimer()
     double target_longitudinal_vel =
       use_external_target_vel_ ? external_target_vel_ : closet_traj_point.longitudinal_velocity_mps;
     double current_longitudinal_vel = odometry_->twist.twist.linear.x;
+//    double current_steering_angle = odometry_->twist.twist.angular.z * 0.22; // scale offsetが必要
 
     cmd.longitudinal.speed = target_longitudinal_vel;
     cmd.longitudinal.acceleration =
@@ -117,7 +121,28 @@ void SimplePurePursuit::onTimer()
                    tf2::getYaw(odometry_->pose.pose.orientation);
     cmd.lateral.steering_tire_angle =
       steering_tire_angle_gain_ * std::atan2(2.0 * wheel_base_ * std::sin(alpha), lookahead_distance);
+/*
+    // 操舵速度制限は、0.35rad/s * 30ms = 0.0105
+    if (fabs(cmd.lateral.steering_tire_angle - current_steering_angle) > steer_v_lmt_ ) {
+      if (cmd.lateral.steering_tire_angle > current_steering_angle) {
+        cmd.lateral.steering_tire_angle = current_steering_angle + steer_v_lmt_;
+      }
+      else if (cmd.lateral.steering_tire_angle < current_steering_angle) {
+        cmd.lateral.steering_tire_angle = current_steering_angle - steer_v_lmt_;
+      }
+    }
+*/
+    if (use_steer_lmt_) {
+      if (cmd.lateral.steering_tire_angle < 0
+       && cmd.lateral.steering_tire_angle < -steer_lmt_)
+        cmd.lateral.steering_tire_angle = -steer_lmt_;
+      else if (cmd.lateral.steering_tire_angle >= 0
+       && cmd.lateral.steering_tire_angle > steer_lmt_)
+        cmd.lateral.steering_tire_angle = steer_lmt_;
+    }
+
   }
+
   pub_cmd_->publish(cmd);
   cmd.lateral.steering_tire_angle /=  steering_tire_angle_gain_;
   pub_raw_cmd_->publish(cmd);

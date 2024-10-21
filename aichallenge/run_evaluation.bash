@@ -18,7 +18,7 @@ echo "Start AWSIM"
 $AWSIM_DIRECTORY/AWSIM.x86_64 >/dev/null &
 PID_AWSIM=$!
 #sleep 20
-sleep 8
+sleep 7
 
 # Start Autoware
 echo "Start Autoware"
@@ -31,12 +31,14 @@ sleep 5
 echo "Start rosbag"
 ros2 bag record -a -o rosbag2_autoware >/dev/null 2>&1 &
 PID_ROSBAG=$!
-sleep 5
+#sleep 5
+sleep 4
 
 # Start recording rviz2
 echo "Start screen capture"
 until (ros2 service type /debug/service/capture_screen >/dev/null); do
-    sleep 5
+#    sleep 5
+    sleep 2
 done
 
 # Move windows

@@ -23,6 +23,7 @@ ActuationCmdConverter::ActuationCmdConverter(const rclcpp::NodeOptions & node_op
   const std::string csv_path_accel_map = declare_parameter<std::string>("csv_path_accel_map");
   const std::string csv_path_brake_map = declare_parameter<std::string>("csv_path_brake_map");
   steer_delay_sec_ = this->declare_parameter<double>("steer_delay_sec");
+  steer_v_limit_ = this->declare_parameter<double>("steer_v_limit");
   delay_ = std::chrono::duration<double>(steer_delay_sec_);
   // Subscriptions
   sub_actuation_ = create_subscription<ActuationCommandStamped>(
@@ -31,6 +32,10 @@ ActuationCmdConverter::ActuationCmdConverter(const rclcpp::NodeOptions & node_op
     "/vehicle/status/gear_status", 1, std::bind(&ActuationCmdConverter::on_gear_report, this, _1));
   sub_velocity_ = create_subscription<VelocityReport>(
     "/vehicle/status/velocity_status", 1, std::bind(&ActuationCmdConverter::on_velocity_report, this, _1));
+
+  // 操舵速度制限追加
+  sub_steering_ = create_subscription<SteeringReport>(
+    "/vehicle/status/steering_status", 1, std::bind(&ActuationCmdConverter::on_steering_report, this, _1));
 
   // Publishers
   pub_ackermann_ = create_publisher<AckermannControlCommand>("/awsim/control_cmd", 1);
@@ -56,24 +61,55 @@ void ActuationCmdConverter::on_velocity_report(const VelocityReport::ConstShared
   velocity_report_ = msg;
 }
 
+// 操舵速度制限追加
+void ActuationCmdConverter::on_steering_report(const SteeringReport::ConstSharedPtr msg)
+{
+  steering_report_ = msg;
+}
+
 void ActuationCmdConverter::on_actuation_cmd(const ActuationCommandStamped::ConstSharedPtr msg)
 {
   // Wait for input data
-  if (!gear_report_ || !velocity_report_) {
+  if (!gear_report_ || !velocity_report_ || !steering_report_) {  // 操舵速度制限追加
     return;
   }
 
   const double velocity = std::abs(velocity_report_->longitudinal_velocity);
   const double acceleration = get_acceleration(*msg, velocity);
-  // Add steer_cmd to history. Limit -35 deg to 35 deg
-  steer_cmd_history_.emplace_back(msg->header.stamp, std::clamp(msg->actuation.steer_cmd, -0.61, 0.61));
+  const double current_angle = steering_report_->steering_tire_angle;
 
+  // 操舵速度制限追加
+  // 操舵速度制限は、0.35rad/s * 30ms = 0.0105
+  double target_angle = msg->actuation.steer_cmd;
+
+  if (std::fabs(target_angle - current_angle) > steer_v_limit_ ) {
+    if (target_angle > current_angle) {
+      target_angle = current_angle + steer_v_limit_;
+    } else {
+      target_angle = current_angle - steer_v_limit_;
+    }
+  }
+
+  // Add steer_cmd to history. Limit -35 deg to 35 deg
+//  steer_cmd_history_.emplace_back(msg->header.stamp, std::clamp(msg->actuation.steer_cmd, -0.61, 0.61));
+  steer_cmd_history_.emplace_back(msg->header.stamp, std::clamp(target_angle, -0.61, 0.61));
 
   // Publish ControlCommand
   constexpr float nan = std::numeric_limits<double>::quiet_NaN();
   AckermannControlCommand output;
   output.stamp = msg->header.stamp;
   output.lateral.steering_tire_angle = get_delayed_steer_cmd(msg->header.stamp);
+/*
+  // 操舵速度制限追加
+  // 操舵速度制限は、0.35rad/s * 30ms = 0.0105
+  if (std::fabs(output.lateral.steering_tire_angle - current_angle) > steer_v_limit_ ) {
+    if (output.lateral.steering_tire_angle > current_angle) {
+      output.lateral.steering_tire_angle = current_angle + steer_v_limit_;
+    } else {
+      output.lateral.steering_tire_angle = current_angle - steer_v_limit_;
+    }
+  }
+*/
   output.lateral.steering_tire_rotation_rate = nan;
   output.longitudinal.speed = nan;
   output.longitudinal.acceleration = static_cast<float>(acceleration);

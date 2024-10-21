@@ -50,6 +50,9 @@ class SimplePurePursuit : public rclcpp::Node {
   const double speed_proportional_gain_;
   const bool use_external_target_vel_;
   const double external_target_vel_;
+  const bool use_steer_lmt_;
+  const double steer_lmt_;
+  const double steer_v_lmt_;
   const double steering_tire_angle_gain_;
 
 
