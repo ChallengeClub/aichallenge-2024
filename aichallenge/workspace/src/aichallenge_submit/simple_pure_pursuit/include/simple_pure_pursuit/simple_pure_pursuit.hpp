@@ -48,6 +48,7 @@ class SimplePurePursuit : public rclcpp::Node {
   const double lookahead_gain_;
   const double lookahead_min_distance_;
   const double speed_proportional_gain_;
+  const double steering_diff_gain_;  // 操舵制御用
   const bool use_external_target_vel_;
   const double external_target_vel_;
   const bool use_steer_lmt_;
@@ -59,6 +60,7 @@ class SimplePurePursuit : public rclcpp::Node {
  private:
   void onTimer();
   bool subscribeMessageAvailable();
+  double last_steering_angle; //  操舵制御用
 };
 
 }  // namespace simple_pure_pursuit

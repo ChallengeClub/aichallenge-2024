@@ -209,8 +209,10 @@
 
   <!-- Pure Pursuit -->
   <let name="steering_tire_angle_gain_var" value="1.0" if="$(var simulation)"/> <!-- simulator用original -->
-  <let name="steering_tire_angle_gain_var" value="1.5" if="$(var simulation)"/>
-  <let name="steering_tire_angle_gain_var" value="1.5" if="$(var simulation)"/>
+  <let name="steering_tire_angle_gain_var" value="1.5" if="$(var simulation)"/> <!--NG-->
+  <let name="steering_tire_angle_gain_var" value="3.0" if="$(var simulation)"/>
+  <let name="steering_tire_angle_gain_var" value="2.5" if="$(var simulation)"/> <!--NG-->
+  <let name="steering_tire_angle_gain_var" value="2.0" if="$(var simulation)"/>
   <let name="steering_tire_angle_gain_var" value="1.639" unless="$(var simulation)"/> <!-- original -->
   <let name="steering_tire_angle_gain_var" value="3.278" unless="$(var simulation)"/>
   <let name="steering_tire_angle_gain_var" value="1.639" unless="$(var simulation)"/> <!-- original -->
@@ -222,12 +224,15 @@
     <param name="external_target_vel" value="4.16667"/> <!-- 15km/h -->
     <param name="external_target_vel" value="2.77778"/> <!-- 10km/h -->
     <param name="external_target_vel" value="1.38889"/> <!-- 5km/h -->
-    <param name="external_target_vel" value="5.939"/> <!-- 20km/h -->
+    <param name="external_target_vel" value="4.16667"/> <!-- 15km/h -->
+    <param name="external_target_vel" value="5.939"/> <!-- 21km/h -->
+    <param name="external_target_vel" value="4.16667"/> <!-- 15km/h -->
 
     <param name="lookahead_gain" value="0.5"/>
     <param name="lookahead_min_distance" value="3.5"/>
     <param name="speed_proportional_gain" value="1.0"/>
     <param name="steering_tire_angle_gain" value="$(var steering_tire_angle_gain_var)"/>
+    <param name="steering_diff_gain" value="0.5"/> <!-- 操舵制御用 -->
 
     <param name="use_steer_lmt" value="false"/>
     <param name="steer_lmt" value="1.39556"/> <!-- 80deg -->

@@ -80,7 +80,7 @@ void ActuationCmdConverter::on_actuation_cmd(const ActuationCommandStamped::Cons
 
   // 操舵速度制限追加
   // 操舵速度制限は、0.35rad/s * 30ms = 0.0105
-  double target_angle = msg->actuation.steer_cmd;
+  double target_angle = msg->actuation.steer_cmd / 2.0; // 曲がり難さを考慮して、目標操舵角を半分にする。steer_v_limit_も半分にする必要あり。
 
   if (std::fabs(target_angle - current_angle) > steer_v_limit_ ) {
     if (target_angle > current_angle) {
@@ -92,7 +92,7 @@ void ActuationCmdConverter::on_actuation_cmd(const ActuationCommandStamped::Cons
 
   // Add steer_cmd to history. Limit -35 deg to 35 deg
 //  steer_cmd_history_.emplace_back(msg->header.stamp, std::clamp(msg->actuation.steer_cmd, -0.61, 0.61));
-  steer_cmd_history_.emplace_back(msg->header.stamp, std::clamp(target_angle, -0.61, 0.61));
+  steer_cmd_history_.emplace_back(msg->header.stamp, std::clamp(target_angle, -0.5585, 0.5585)); // 実際の舵角は、32deg=0.5585rad
 
   // Publish ControlCommand
   constexpr float nan = std::numeric_limits<double>::quiet_NaN();

@@ -21,6 +21,7 @@ SimplePurePursuit::SimplePurePursuit()
   lookahead_gain_(declare_parameter<float>("lookahead_gain", 1.0)),
   lookahead_min_distance_(declare_parameter<float>("lookahead_min_distance", 1.0)),
   speed_proportional_gain_(declare_parameter<float>("speed_proportional_gain", 1.0)),
+  steering_diff_gain_(declare_parameter<float>("steering_diff_gain", 0.5)),  // 操舵制御用
   use_external_target_vel_(declare_parameter<bool>("use_external_target_vel", false)),
   external_target_vel_(declare_parameter<float>("external_target_vel", 0.0)),
   use_steer_lmt_(declare_parameter<bool>("use_steer_lmt", false)),
@@ -121,7 +122,33 @@ void SimplePurePursuit::onTimer()
                    tf2::getYaw(odometry_->pose.pose.orientation);
     cmd.lateral.steering_tire_angle =
       steering_tire_angle_gain_ * std::atan2(2.0 * wheel_base_ * std::sin(alpha), lookahead_distance);
+
+    //  上記で、simple_pure_pursuitによる操舵角を算出
+    //　実際のステアリングの制御は触れるファイルとしては存在指定なさそう、すなわち、
+    //  操舵角指示への追従制御を触れないので、指示角を調整するのが良さそう。
+    //  前回指示角と今回指示角の増減から、指示を調整する。差が大きくなっていれば、その差分を加える。
+    //  差が小さくなっていれば、もとの指示値のままとする。
+    //  走行速度を考慮したゲイン調整については、速度による操舵遅れも操舵指示の大きさの変化に反映済みと考えて、不要とする。
+
+    // ここから追加
 /*
+    double steering_diff;
+    if ((last_steering_angle >= 0 && cmd.lateral.steering_tire_angle >= 0)
+    || (last_steering_angle <  0 && cmd.lateral.steering_tire_angle <  0)) { // 前回の操舵向きと同じ
+      steering_diff = abs(cmd.lateral.steering_tire_angle) - abs(last_steering_angle);
+      if (steering_diff > 0) { // 前回よりも指示値が大きくなった、すなわち、追従できていない。
+        if (last_steering_angle >= 0) 
+          cmd.lateral.steering_tire_angle += steering_diff * steering_diff_gain_;
+        else
+          cmd.lateral.steering_tire_angle -= steering_diff * steering_diff_gain_;
+      }
+    }
+*/  //  だめだ。戻しが遅い。戻しについても、微分制御を入れなければ、間に合わない。
+    last_steering_angle = cmd.lateral.steering_tire_angle;
+    // 追加終わり
+
+/*
+    //　操舵指令値の方で制限をかけようとしたコード。ややこしくなるのでやめ。actuation_cmd_converter.cpp側でかけた。
     // 操舵速度制限は、0.35rad/s * 30ms = 0.0105
     if (fabs(cmd.lateral.steering_tire_angle - current_steering_angle) > steer_v_lmt_ ) {
       if (cmd.lateral.steering_tire_angle > current_steering_angle) {
@@ -132,7 +159,8 @@ void SimplePurePursuit::onTimer()
       }
     }
 */
-    if (use_steer_lmt_) {
+/*
+    if (use_steer_lmt_) { // 実機の操舵指令値と実際の曲がり具合を調べるためのコード。余裕がなくて使わなかった。
       if (cmd.lateral.steering_tire_angle < 0
        && cmd.lateral.steering_tire_angle < -steer_lmt_)
         cmd.lateral.steering_tire_angle = -steer_lmt_;
@@ -140,7 +168,7 @@ void SimplePurePursuit::onTimer()
        && cmd.lateral.steering_tire_angle > steer_lmt_)
         cmd.lateral.steering_tire_angle = steer_lmt_;
     }
-
+*/
   }
 
   pub_cmd_->publish(cmd);

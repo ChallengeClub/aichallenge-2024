@@ -8,7 +8,8 @@
     <param name="steer_v_limit" value="0.0105"/>
     <param name="steer_v_limit" value="0.025"/>
     <param name="steer_v_limit" value="0.037"/>
-    <param name="steer_v_limit" value="0.0799"/>
+    <param name="steer_v_limit" value="0.0799"/> <!-- こちらが実機から割り出した制限 -->
+    <param name="steer_v_limit" value="0.0399"/> <!-- 曲がりにくいから半分にする -->
     <param name="csv_path_accel_map" value="$(var csv_path_accel_map)"/>
     <param name="csv_path_brake_map" value="$(var csv_path_brake_map)"/>
   </node>
