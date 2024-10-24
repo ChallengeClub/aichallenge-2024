@@ -218,7 +218,7 @@
   <let name="steering_tire_angle_gain_var" value="1.639" unless="$(var simulation)"/> <!-- original -->
   
   <node pkg="simple_pure_pursuit" exec="simple_pure_pursuit" name="simple_pure_pursuit_node" output="screen">
-    <param name="use_external_target_vel" value="true"/>
+    <param name="use_external_target_vel" value="false"/>
     <param name="external_target_vel" value="8.33333"/> <!-- 30km/h -->
     <param name="external_target_vel" value="5.55556"/> <!-- 20km/h -->
     <param name="external_target_vel" value="4.16667"/> <!-- 15km/h -->
@@ -227,24 +227,25 @@
     <param name="external_target_vel" value="4.16667"/> <!-- 15km/h -->
     <param name="external_target_vel" value="5.939"/> <!-- 21km/h -->
     <param name="external_target_vel" value="4.16667"/> <!-- 15km/h -->
+    <param name="external_target_vel" value="8.33333"/> <!-- 30km/h -->
 
     <param name="lookahead_gain" value="0.5"/>
     <param name="lookahead_min_distance" value="3.5"/>
-    <param name="speed_proportional_gain" value="1.0"/>
+    <param name="speed_proportional_gain" value="1.0"/> <!-- Original -->
+    <param name="speed_proportional_gain" value="3.0"/> <!-- Original -->
     <param name="steering_tire_angle_gain" value="$(var steering_tire_angle_gain_var)"/>
     <param name="steering_diff_gain" value="0.5"/> <!-- 操舵制御用 -->
 
-    <param name="use_steer_lmt" value="false"/>
-    <param name="steer_lmt" value="1.39556"/> <!-- 80deg -->
-    <param name="steer_lmt" value="0.69778"/> <!-- 40deg -->
-    <param name="steer_lmt" value="0.34889"/> <!-- 20deg -->
-    <param name="steer_lmt" value="0.26167"/> <!-- 15deg -->
-    <param name="steer_lmt" value="0.17444"/> <!-- 10deg -->
-    <param name="steer_lmt" value="0.20933"/> <!-- 12deg -->
+    <param name="use_steer_angle_v_limit" value="false"/> <!-- 操舵角による速度制限をするかどうか -->
+    <param name="v_limit_angle" value="1.39556"/> <!-- 80deg -->
+    <param name="v_limit_angle" value="0.69778"/> <!-- 40deg -->
+    <param name="v_limit_angle" value="0.34889"/> <!-- 20deg -->
+    <param name="v_limit_angle" value="0.26167"/> <!-- 15deg -->
+    <param name="v_limit_angle" value="0.17444"/> <!-- 10deg -->
+    <param name="v_limit_angle" value="0.20933"/> <!-- [rad] 12deg -->
+    <param name="v_limit_angle" value="0.17444"/> <!-- 10deg -->
 
-    <param name="steer_v_lmt" value="0.0105"/> <!-- 0.35rad/s * 30ms -->
-    <param name="steer_v_lmt" value="0.0175"/> <!-- 0.35rad/s * 50ms -->
-    <param name="steer_v_lmt" value="0.0210"/> <!-- 0.35rad/s * 60ms -->
+    <param name="angle_limit_v" value="4.16667"/> <!-- [m/s] 15km/h -->
 
     <remap from="input/kinematics" to="/localization/kinematic_state"/>
     <remap from="input/trajectory" to="/planning/scenario_planning/trajectory"/>
