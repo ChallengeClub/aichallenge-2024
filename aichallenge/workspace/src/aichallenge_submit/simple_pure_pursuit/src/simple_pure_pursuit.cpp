@@ -66,8 +66,14 @@ void SimplePurePursuit::onTimer()
     return;
   }
 
+  double current_longitudinal_vel = odometry_->twist.twist.linear.x;
+  double yaw = tf2::getYaw(odometry_->pose.pose.orientation);// x軸と一致する向きが0
+  odometry_->pose.pose.position.x += std::cos(yaw) * current_longitudinal_vel * predict_time_;
+  odometry_->pose.pose.position.y += std::sin(yaw) * current_longitudinal_vel * predict_time_;
+  double predict_yaw = yaw + odometry_->twist.twist.angular.z * predict_time_;
+
   size_t closet_traj_point_idx =
-    findNearestIndex(trajectory_->points, odometry_->pose.pose.position);
+    findNearestIndex(trajectory_->points, odometry_->pose.pose.position);///■これ、まずい。odometryの中身を書き換える。
 
   // publish zero command
   AckermannControlCommand cmd = zeroAckermannControlCommand(get_clock()->now());
@@ -85,7 +91,7 @@ void SimplePurePursuit::onTimer()
     // calc longitudinal speed and acceleration
     double target_longitudinal_vel =
       use_external_target_vel_ ? external_target_vel_ : closet_traj_point.longitudinal_velocity_mps;
-    double current_longitudinal_vel = odometry_->twist.twist.linear.x;
+//    double current_longitudinal_vel = odometry_->twist.twist.linear.x;
 //    double current_steering_angle = odometry_->twist.twist.angular.z * 0.22; // scale offsetが必要
 /*
     cmd.longitudinal.speed = target_longitudinal_vel;
@@ -96,17 +102,20 @@ void SimplePurePursuit::onTimer()
     //// calc lookahead distance
     double lookahead_distance = lookahead_gain_ * target_longitudinal_vel + lookahead_min_distance_;
     //// calc center coordinate of rear wheel
-
+/*
     double yaw = tf2::getYaw(odometry_->pose.pose.orientation);// x軸と一致する向きが0
-    double rear_x = odometry_->pose.pose.position.x - wheel_base_ / 2.0 * std::cos(yaw);
-    double rear_y = odometry_->pose.pose.position.y - wheel_base_ / 2.0 * std::sin(yaw);
-    double predict_run_x = std::cos(yaw) * current_longitudinal_vel * predict_time_;
-    double predict_run_y = std::sin(yaw) * current_longitudinal_vel * predict_time_;
+    double predict_x = odometry_->pose.pose.position.x + std::cos(yaw) * current_longitudinal_vel * predict_time_;
+    double predict_y = odometry_->pose.pose.position.y + std::sin(yaw) * current_longitudinal_vel * predict_time_;
     double predict_yaw = yaw + odometry_->twist.twist.angular.z * predict_time_;
-
-    rear_x += predict_run_x;
-    rear_y += predict_run_y;
-
+*/
+/*
+    double rear_x = predict_x - wheel_base_ / 2.0 * std::cos(predict_yaw);
+    double rear_y = predict_y - wheel_base_ / 2.0 * std::sin(predict_yaw);
+*/
+    double rear_x = odometry_->pose.pose.position.x -
+                    wheel_base_ / 2.0 * std::cos(predict_yaw);
+    double rear_y = odometry_->pose.pose.position.y -
+                    wheel_base_ / 2.0 * std::sin(predict_yaw);
 /*
     double rear_x = odometry_->pose.pose.position.x -
                     wheel_base_ / 2.0 * std::cos(odometry_->pose.pose.orientation.z);
@@ -118,7 +127,6 @@ void SimplePurePursuit::onTimer()
       trajectory_->points.begin() + closet_traj_point_idx, trajectory_->points.end(),
       [&](const TrajectoryPoint & point) {
         return std::hypot(point.pose.position.x - rear_x, point.pose.position.y - rear_y) >=
-//        return std::hypot(point.pose.position.x - rear_x + predict_run_x, point.pose.position.y - rear_y + predict_run_y) >=
                lookahead_distance;
       });
     if (lookahead_point_itr == trajectory_->points.end()) {
@@ -130,9 +138,19 @@ void SimplePurePursuit::onTimer()
     geometry_msgs::msg::PointStamped lookahead_point_msg;
     lookahead_point_msg.header.stamp = get_clock()->now();
     lookahead_point_msg.header.frame_id = "map";
+
     lookahead_point_msg.point.x = lookahead_point_x;
     lookahead_point_msg.point.y = lookahead_point_y;
     lookahead_point_msg.point.z = 0;
+/*
+    lookahead_point_msg.point.x = odometry_->pose.pose.position.x;
+    lookahead_point_msg.point.x = rear_x;
+    lookahead_point_msg.point.y = odometry_->pose.pose.position.y;
+    lookahead_point_msg.point.y = rear_y;
+*/
+    lookahead_point_msg.point.z = predict_yaw;
+//    lookahead_point_msg.point.z = lookahead_distance;
+
     pub_lookahead_point_->publish(lookahead_point_msg);
 
     // calc steering angle for lateral control
