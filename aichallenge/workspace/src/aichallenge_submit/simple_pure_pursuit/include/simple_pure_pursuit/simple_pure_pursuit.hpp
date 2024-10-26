@@ -46,6 +46,7 @@ class SimplePurePursuit : public rclcpp::Node {
   // pure pursuit parameters
   const double wheel_base_;
   const double lookahead_gain_;
+  const double lookahead_gain2_; // 先読み用
   const double lookahead_min_distance_;
   const double speed_proportional_gain_;
   const double steering_diff_gain_;  // 操舵制御用
@@ -53,7 +54,9 @@ class SimplePurePursuit : public rclcpp::Node {
   const double external_target_vel_;
   const bool use_steer_angle_v_limit_;
   const double v_limit_angle_;
+  const double v_limit_angle2_;
   const double angle_limit_v_;
+  const double angle_limit_v2_;
   const double steering_tire_angle_gain_;
 
 

@@ -19,6 +19,7 @@ SimplePurePursuit::SimplePurePursuit()
   // initialize parameters
   wheel_base_(declare_parameter<float>("wheel_base", 2.14)),
   lookahead_gain_(declare_parameter<float>("lookahead_gain", 1.0)),
+  lookahead_gain2_(declare_parameter<float>("lookahead_gain2", 1.0)),// 先読み用
   lookahead_min_distance_(declare_parameter<float>("lookahead_min_distance", 1.0)),
   speed_proportional_gain_(declare_parameter<float>("speed_proportional_gain", 1.0)),
   steering_diff_gain_(declare_parameter<float>("steering_diff_gain", 0.5)),  // 操舵制御用
@@ -26,7 +27,9 @@ SimplePurePursuit::SimplePurePursuit()
   external_target_vel_(declare_parameter<float>("external_target_vel", 0.0)),
   use_steer_angle_v_limit_(declare_parameter<bool>("use_steer_angle_v_limit", false)),
   v_limit_angle_(declare_parameter<float>("v_limit_angle", 0.20933)),  // 12degree
+  v_limit_angle2_(declare_parameter<float>("v_limit_angle2", 0.20933)),  // 先読み用
   angle_limit_v_(declare_parameter<float>("angle_limit_v", 4.16667)),  // 15km/h
+  angle_limit_v2_(declare_parameter<float>("angle_limit_v2", 4.16667)),  // 先読み用
   steering_tire_angle_gain_(declare_parameter<float>("steering_tire_angle_gain", 1.0))
 {
   pub_cmd_ = create_publisher<AckermannControlCommand>("output/control_cmd", 1);
