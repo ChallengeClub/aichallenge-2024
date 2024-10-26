@@ -30,6 +30,7 @@ SimplePurePursuit::SimplePurePursuit()
   v_limit_angle2_(declare_parameter<float>("v_limit_angle2", 0.20933)),  // 先読み用
   angle_limit_v_(declare_parameter<float>("angle_limit_v", 4.16667)),  // 15km/h
   angle_limit_v2_(declare_parameter<float>("angle_limit_v2", 4.16667)),  // 先読み用
+  predict_time_(declare_parameter<float>("predict_time", 0.5)),  // 先読み用
   steering_tire_angle_gain_(declare_parameter<float>("steering_tire_angle_gain", 1.0))
 {
   pub_cmd_ = create_publisher<AckermannControlCommand>("output/control_cmd", 1);
@@ -96,9 +97,15 @@ void SimplePurePursuit::onTimer()
     double lookahead_distance = lookahead_gain_ * target_longitudinal_vel + lookahead_min_distance_;
     //// calc center coordinate of rear wheel
 
-    double yaw = tf2::getYaw(odometry_->pose.pose.orientation);
+    double yaw = tf2::getYaw(odometry_->pose.pose.orientation);// x軸と一致する向きが0
     double rear_x = odometry_->pose.pose.position.x - wheel_base_ / 2.0 * std::cos(yaw);
     double rear_y = odometry_->pose.pose.position.y - wheel_base_ / 2.0 * std::sin(yaw);
+    double predict_run_x = std::cos(yaw) * current_longitudinal_vel * predict_time_;
+    double predict_run_y = std::sin(yaw) * current_longitudinal_vel * predict_time_;
+    double predict_yaw = yaw + odometry_->twist.twist.angular.z * predict_time_;
+
+    rear_x += predict_run_x;
+    rear_y += predict_run_y;
 
 /*
     double rear_x = odometry_->pose.pose.position.x -
@@ -111,6 +118,7 @@ void SimplePurePursuit::onTimer()
       trajectory_->points.begin() + closet_traj_point_idx, trajectory_->points.end(),
       [&](const TrajectoryPoint & point) {
         return std::hypot(point.pose.position.x - rear_x, point.pose.position.y - rear_y) >=
+//        return std::hypot(point.pose.position.x - rear_x + predict_run_x, point.pose.position.y - rear_y + predict_run_y) >=
                lookahead_distance;
       });
     if (lookahead_point_itr == trajectory_->points.end()) {
@@ -128,8 +136,9 @@ void SimplePurePursuit::onTimer()
     pub_lookahead_point_->publish(lookahead_point_msg);
 
     // calc steering angle for lateral control
-    double alpha = std::atan2(lookahead_point_y - rear_y, lookahead_point_x - rear_x) -
-                   tf2::getYaw(odometry_->pose.pose.orientation);
+    double alpha = std::atan2(lookahead_point_y - rear_y, lookahead_point_x - rear_x) - predict_yaw; // 車体の位置と、向きを予測
+//    double alpha = std::atan2(lookahead_point_y - rear_y, lookahead_point_x - rear_x) -
+//                   tf2::getYaw(odometry_->pose.pose.orientation); // 向きについては、予想できていない。これも予想できたほうが良い。
     cmd.lateral.steering_tire_angle =
       steering_tire_angle_gain_ * std::atan2(2.0 * wheel_base_ * std::sin(alpha), lookahead_distance);
 

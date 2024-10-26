@@ -57,6 +57,7 @@ class SimplePurePursuit : public rclcpp::Node {
   const double v_limit_angle2_;
   const double angle_limit_v_;
   const double angle_limit_v2_;
+  const double predict_time_;
   const double steering_tire_angle_gain_;
 
 
