@@ -6,7 +6,7 @@
   <node pkg="aichallenge_awsim_adapter" exec="actuation_cmd_converter">
     <param name="steer_delay_sec" value="0.2"/>
     <param name="steer_v_limit" value="0.0799"/> <!-- こちらが実機から割り出した制限 -->
-    <param name="steer_v_limit" value="0.0399"/> <!-- 実機の曲がりにくさを考慮すると、制限は半分が妥当 -->
+    <param name="steer_v_limit" value="0.0399"/> <!-- 実機の曲がりにくさを考慮すると、制限は半分が妥当 0.35rad/sの半分に相当する値。多少誤差はあるかもしれないが正しそう -->
     <param name="csv_path_accel_map" value="$(var csv_path_accel_map)"/>
     <param name="csv_path_brake_map" value="$(var csv_path_brake_map)"/>
   </node>

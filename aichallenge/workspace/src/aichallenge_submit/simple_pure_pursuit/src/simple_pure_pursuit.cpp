@@ -139,15 +139,16 @@ void SimplePurePursuit::onTimer()
     lookahead_point_msg.header.stamp = get_clock()->now();
     lookahead_point_msg.header.frame_id = "map";
 
+    // Original ルックアヘッド位置
+/**/
     lookahead_point_msg.point.x = lookahead_point_x;
     lookahead_point_msg.point.y = lookahead_point_y;
     lookahead_point_msg.point.z = 0;
-/*
-    lookahead_point_msg.point.x = odometry_->pose.pose.position.x;
-    lookahead_point_msg.point.x = rear_x;
-    lookahead_point_msg.point.y = odometry_->pose.pose.position.y;
-    lookahead_point_msg.point.y = rear_y;
-*/
+/**/
+    // 推定した自己位置■速度ゲインをなくしてみる？
+//    lookahead_point_msg.point.x = odometry_->pose.pose.position.x;
+//    lookahead_point_msg.point.y = odometry_->pose.pose.position.y;
+/**/
     lookahead_point_msg.point.z = predict_yaw;
 //    lookahead_point_msg.point.z = lookahead_distance;
 
