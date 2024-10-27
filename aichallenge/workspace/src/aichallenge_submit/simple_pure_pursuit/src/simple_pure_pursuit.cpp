@@ -175,8 +175,8 @@ void SimplePurePursuit::onTimer()
     double steering_tire_angle = std::atan2(2.0 * wheel_base_ * std::sin(alpha), lookahead_distance);
 
     alpha = std::atan2(lookahead_point2_y - rear_y, lookahead_point2_x - rear_x) - predicted_yaw; // 遠方のルックアヘッド
-    steering_tire_angle += std::atan2(2.0 * wheel_base_ * std::sin(alpha), lookahead_distance2);
-    cmd.lateral.steering_tire_angle = steering_tire_angle_gain_ * steering_tire_angle / 2.0;  // 2つのルックアヘッドの平均を操舵角にする
+    double steering_tire_angle2 = std::atan2(2.0 * wheel_base_ * std::sin(alpha), lookahead_distance2);
+    cmd.lateral.steering_tire_angle = steering_tire_angle_gain_ * (steering_tire_angle + steering_tire_angle2) / 2.0;  // 2つのルックアヘッドの平均を操舵角にする
 
     //  上記で、simple_pure_pursuitによる操舵角を算出
     //　実際のステアリングの制御は触れるファイルとしては存在指定なさそう、すなわち、
