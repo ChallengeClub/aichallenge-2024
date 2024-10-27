@@ -21,6 +21,7 @@ SimplePurePursuit::SimplePurePursuit()
   lookahead_gain_(declare_parameter<float>("lookahead_gain", 1.0)),
   lookahead_gain2_(declare_parameter<float>("lookahead_gain2", 1.0)),// 先読み用
   lookahead_min_distance_(declare_parameter<float>("lookahead_min_distance", 1.0)),
+  lookahead_min_distance2_(declare_parameter<float>("lookahead_min_distance2", 1.0)),
   speed_proportional_gain_(declare_parameter<float>("speed_proportional_gain", 1.0)),
   steering_diff_gain_(declare_parameter<float>("steering_diff_gain", 0.5)),  // 操舵制御用
   use_external_target_vel_(declare_parameter<bool>("use_external_target_vel", false)),
@@ -104,6 +105,7 @@ void SimplePurePursuit::onTimer()
     // calc lateral control
     //// calc lookahead distance
     double lookahead_distance = lookahead_gain_ * target_longitudinal_vel + lookahead_min_distance_;
+    double lookahead_distance2 = lookahead_gain2_ * target_longitudinal_vel + lookahead_min_distance2_; // 先読み用
 
     //// calc center coordinate of rear wheel
 /*  予測位置で算出するように変更
@@ -122,14 +124,24 @@ void SimplePurePursuit::onTimer()
     auto lookahead_point_itr = std::find_if(
       trajectory_->points.begin() + closet_traj_point_idx, trajectory_->points.end(),
       [&](const TrajectoryPoint & point) {
-        return std::hypot(point.pose.position.x - rear_x, point.pose.position.y - rear_y) >=
-               lookahead_distance;
+        return std::hypot(point.pose.position.x - rear_x, point.pose.position.y - rear_y) >= lookahead_distance;
+      });
+    auto lookahead_point2_itr = std::find_if(
+      trajectory_->points.begin() + closet_traj_point_idx, trajectory_->points.end(),
+      [&](const TrajectoryPoint & point) {
+        return std::hypot(point.pose.position.x - rear_x, point.pose.position.y - rear_y) >= lookahead_distance2;
       });
     if (lookahead_point_itr == trajectory_->points.end()) {
       lookahead_point_itr = trajectory_->points.end() - 1;
     }
+    if (lookahead_point2_itr == trajectory_->points.end()) {
+      lookahead_point2_itr = trajectory_->points.end() - 1;
+    }
+
     double lookahead_point_x = lookahead_point_itr->pose.position.x;
     double lookahead_point_y = lookahead_point_itr->pose.position.y;
+    double lookahead_point2_x = lookahead_point2_itr->pose.position.x;
+    double lookahead_point2_y = lookahead_point2_itr->pose.position.y;
 
     geometry_msgs::msg::PointStamped lookahead_point_msg;
     lookahead_point_msg.header.stamp = get_clock()->now();
@@ -158,8 +170,13 @@ void SimplePurePursuit::onTimer()
     double alpha = std::atan2(lookahead_point_y - rear_y, lookahead_point_x - rear_x) - predicted_yaw; // 車体の位置と、向きを予測
   // 操舵ブレ対策として、本来なら、車体の向きはの加速度に制限をかけるべきだが、根拠はないが、yawを現在地との間にしてみる。・・・うまく行かなかったので、コメントアウト
 //    double alpha = std::atan2(lookahead_point_y - rear_y, lookahead_point_x - rear_x) - (predicted_yaw + yaw) / 2; // 車体の位置と、向きを予測
-    cmd.lateral.steering_tire_angle =
-      steering_tire_angle_gain_ * std::atan2(2.0 * wheel_base_ * std::sin(alpha), lookahead_distance);
+//    cmd.lateral.steering_tire_angle =
+//      steering_tire_angle_gain_ * std::atan2(2.0 * wheel_base_ * std::sin(alpha), lookahead_distance);
+    double steering_tire_angle = std::atan2(2.0 * wheel_base_ * std::sin(alpha), lookahead_distance);
+
+    alpha = std::atan2(lookahead_point2_y - rear_y, lookahead_point2_x - rear_x) - predicted_yaw; // 遠方のルックアヘッド
+    steering_tire_angle += std::atan2(2.0 * wheel_base_ * std::sin(alpha), lookahead_distance2);
+    cmd.lateral.steering_tire_angle = steering_tire_angle_gain_ * steering_tire_angle / 2.0;  // 2つのルックアヘッドの平均を操舵角にする
 
     //  上記で、simple_pure_pursuitによる操舵角を算出
     //　実際のステアリングの制御は触れるファイルとしては存在指定なさそう、すなわち、
