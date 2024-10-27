@@ -233,6 +233,7 @@
     <param name="external_target_vel" value="9.72222"/> <!-- 35km/h -->
     <param name="external_target_vel" value="5.55556"/> <!-- 20km/h -->
     <param name="external_target_vel" value="4.16667"/> <!-- 15km/h -->
+    <param name="external_target_vel" value="9.72222"/> <!-- 35km/h -->
     
     <param name="lookahead_gain" value="0.5"/> <!-- Original -->
     <param name="lookahead_gain" value="0.5"/> <!-- Try -->
@@ -246,18 +247,19 @@
     <param name="steering_tire_angle_gain" value="$(var steering_tire_angle_gain_var)"/>
     <param name="steering_diff_gain" value="5.0"/> <!-- 操舵制御用 -->
 
-    <param name="use_steer_angle_v_limit" value="false"/> <!-- 操舵角による速度制限をするかどうか -->
+    <param name="use_steer_angle_v_limit" value="true"/> <!-- 操舵角による速度制限をするかどうか -->
     <param name="v_limit_angle" value="1.39556"/> <!-- 80deg -->
     <param name="v_limit_angle" value="0.55822"/> <!-- 32deg 実機のリミット -->
     <param name="v_limit_angle" value="0.69778"/> <!-- 40deg -->
     <param name="v_limit_angle" value="0.34889"/> <!-- 20deg -->
-    <param name="v_limit_angle" value="0.26167"/> <!-- 15deg -->
+    <param name="v_limit_angle" value="0.26167"/> <!-- 15deg OK -->
     <param name="v_limit_angle" value="0.17444"/> <!-- 10deg -->
     <param name="v_limit_angle" value="0.20933"/> <!-- [rad] 12deg -->
     <param name="v_limit_angle" value="0.17444"/> <!-- 10deg -->
     <param name="v_limit_angle" value="0.26167"/> <!-- 15deg OK -->
     <param name="v_limit_angle" value="0.34889"/> <!-- 20deg NG -->
     <param name="v_limit_angle2" value="0.43611"/> <!-- 25deg -->
+    <param name="v_limit_angle" value="0.26167"/> <!-- 15deg OK -->
 
     <param name="angle_limit_v" value="4.16667"/> <!-- [m/s] 15km/h -->
     <param name="angle_limit_v2" value="2.77778"/> <!-- [m/s] 10km/h -->
