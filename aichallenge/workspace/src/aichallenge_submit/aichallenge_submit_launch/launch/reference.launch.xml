@@ -221,6 +221,7 @@
   
   <node pkg="simple_pure_pursuit" exec="simple_pure_pursuit" name="simple_pure_pursuit_node" output="screen">
     <param name="predict_time" value="0.7"/> <!-- n秒先の自己位置を予測する -->
+    <param name="predict_time" value="0.0"/> <!-- n秒先の自己位置を予測する -->
   
     <param name="use_external_target_vel" value="true"/>
     <param name="external_target_vel" value="8.33333"/> <!-- 30km/h -->
@@ -228,22 +229,18 @@
     <param name="external_target_vel" value="4.16667"/> <!-- 15km/h -->
     <param name="external_target_vel" value="2.77778"/> <!-- 10km/h -->
     <param name="external_target_vel" value="1.38889"/> <!-- 5km/h -->
-    <param name="external_target_vel" value="4.16667"/> <!-- 15km/h -->
     <param name="external_target_vel" value="5.939"/> <!-- 21km/h -->
-    <param name="external_target_vel" value="4.16667"/> <!-- 15km/h -->
-    <param name="external_target_vel" value="8.33333"/> <!-- 30km/h -->
     <param name="external_target_vel" value="9.72222"/> <!-- 35km/h -->
-    <param name="external_target_vel" value="8.33333"/> <!-- 30km/h -->
-    <param name="external_target_vel" value="5.939"/> <!-- 21km/h -->
+    <param name="external_target_vel" value="5.55556"/> <!-- 20km/h -->
     <param name="external_target_vel" value="4.16667"/> <!-- 15km/h -->
     <param name="external_target_vel" value="5.55556"/> <!-- 20km/h -->
     
     <param name="lookahead_gain" value="0.5"/> <!-- Original -->
-    <param name="lookahead_gain" value="0.0"/> <!-- Try -->
+    <param name="lookahead_gain" value="0.5"/> <!-- Try -->
     <param name="lookahead_gain2" value="1.0"/>
     <param name="lookahead_min_distance" value="3.5"/> <!-- Original -->
     <param name="lookahead_min_distance" value="0.5"/> <!-- 15km/h OK -->
-    <param name="lookahead_min_distance" value="2.0"/> <!-- Try -->
+    <param name="lookahead_min_distance" value="3.5"/> <!-- Try -->
     <param name="speed_proportional_gain" value="1.0"/> <!-- Original -->
     <param name="speed_proportional_gain" value="100.0"/> <!-- Try -->
     <param name="steering_tire_angle_gain" value="$(var steering_tire_angle_gain_var)"/>
