@@ -25,6 +25,7 @@ SimplePurePursuit::SimplePurePursuit()
   speed_proportional_gain_(declare_parameter<float>("speed_proportional_gain", 1.0)),
   steering_diff_gain_(declare_parameter<float>("steering_diff_gain", 0.5)),  // 操舵制御用
   use_external_target_vel_(declare_parameter<bool>("use_external_target_vel", false)),
+  map_vel_gain_(declare_parameter<float>("map_vel_gain", 1.0)),
   external_target_vel_(declare_parameter<float>("external_target_vel", 0.0)),
   use_steer_angle_v_limit_(declare_parameter<bool>("use_steer_angle_v_limit", false)),
   v_limit_angle_(declare_parameter<float>("v_limit_angle", 0.20933)),  // 12degree
@@ -95,7 +96,7 @@ void SimplePurePursuit::onTimer()
 
     // calc longitudinal speed and acceleration
     double target_longitudinal_vel =
-      use_external_target_vel_ ? external_target_vel_ : closet_traj_point.longitudinal_velocity_mps;
+      use_external_target_vel_ ? external_target_vel_ : (closet_traj_point.longitudinal_velocity_mps * map_vel_gain_);
 //    double current_longitudinal_vel = odometry_->twist.twist.linear.x;  上で宣言済み
 //    下記は操舵角が決まってから設定するので下に移動
 //    cmd.longitudinal.speed = target_longitudinal_vel;
