@@ -7,6 +7,7 @@
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/point_stamped.hpp>
+#include <geometry_msgs/msg/pose_with_covariance_stamped.hpp> // by ChatGPT
 #include <nav_msgs/msg/odometry.hpp>
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
@@ -19,6 +20,7 @@ using autoware_auto_planning_msgs::msg::TrajectoryPoint;
 using geometry_msgs::msg::Pose;
 using geometry_msgs::msg::PointStamped;
 using geometry_msgs::msg::Twist;
+using geometry_msgs::msg::PoseWithCovarianceStamped;  //by ChatGPT
 using nav_msgs::msg::Odometry;
 
 class SimplePurePursuit : public rclcpp::Node {
@@ -28,6 +30,7 @@ class SimplePurePursuit : public rclcpp::Node {
   // subscribers
   rclcpp::Subscription<Odometry>::SharedPtr sub_kinematics_;
   rclcpp::Subscription<Trajectory>::SharedPtr sub_trajectory_;
+  rclcpp::Subscription<PoseWithCovarianceStamped>::SharedPtr sub_pose_with_covariance_;//by ChatGPT
   
   // publishers
   rclcpp::Publisher<AckermannControlCommand>::SharedPtr pub_cmd_;
@@ -40,7 +43,7 @@ class SimplePurePursuit : public rclcpp::Node {
   // updated by subscribers
   Trajectory::SharedPtr trajectory_;
   Odometry::SharedPtr odometry_;
-
+  PoseWithCovarianceStamped::SharedPtr pose_with_covariance_;//by ChatGPT
 
 
   // pure pursuit parameters
@@ -67,6 +70,9 @@ class SimplePurePursuit : public rclcpp::Node {
   void onTimer();
   bool subscribeMessageAvailable();
   double last_steering_angle; //  操舵制御用
+  int dbg_cnt;  //  テスト用
+  double test_x;
+  double test_y;
 };
 
 }  // namespace simple_pure_pursuit

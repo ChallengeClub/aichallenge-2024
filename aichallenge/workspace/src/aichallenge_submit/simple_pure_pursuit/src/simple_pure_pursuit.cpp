@@ -44,9 +44,18 @@ SimplePurePursuit::SimplePurePursuit()
   sub_trajectory_ = create_subscription<Trajectory>(
     "input/trajectory", 1, [this](const Trajectory::SharedPtr msg) { trajectory_ = msg; });
 
+  // 以下、by ChatGPT
+  sub_pose_with_covariance_ = create_subscription<PoseWithCovarianceStamped>(
+    "/sensing/gnss/pose_with_covariance", 1,
+    [this](const PoseWithCovarianceStamped::SharedPtr msg) {
+      pose_with_covariance_ = msg;
+    });
+
   using namespace std::literals::chrono_literals;
   timer_ =
     rclcpp::create_timer(this, get_clock(), 30ms, std::bind(&SimplePurePursuit::onTimer, this));
+
+  dbg_cnt = 0;
 }
 
 AckermannControlCommand zeroAckermannControlCommand(rclcpp::Time stamp)
@@ -147,15 +156,26 @@ void SimplePurePursuit::onTimer()
     geometry_msgs::msg::PointStamped lookahead_point_msg;
     lookahead_point_msg.header.stamp = get_clock()->now();
     lookahead_point_msg.header.frame_id = "map";
-    if (true) { // Original ルックアヘッド位置
+    if (true) { // Original ルックアヘッド位置  デバッグ時は、falseにする。本番は、trueにしなければならない。
       lookahead_point_msg.point.x = lookahead_point_x;
       lookahead_point_msg.point.y = lookahead_point_y;
       lookahead_point_msg.point.z = predicted_yaw;
     } else {    // デバッグ情報色々
   //    lookahead_point_msg.point.x = odometry_->pose.pose.position.x;
   //    lookahead_point_msg.point.y = odometry_->pose.pose.position.y;
-      lookahead_point_msg.point.x = predicted_x;
-      lookahead_point_msg.point.y = predicted_y;
+  //    lookahead_point_msg.point.x = predicted_x;
+      if (dbg_cnt % 300 <= 40) {  // GNSS信号停止。300*30ms中、40*30msの間は更新される。
+        test_x = pose_with_covariance_->pose.pose.position.x;
+        test_y = pose_with_covariance_->pose.pose.position.y;
+      } else {
+        pose_with_covariance_->pose.pose.position.x = test_x;
+        pose_with_covariance_->pose.pose.position.y = test_y;
+      }
+      dbg_cnt++;
+      lookahead_point_msg.point.x = pose_with_covariance_->pose.pose.position.x;
+
+  //    lookahead_point_msg.point.y = predicted_y;
+      lookahead_point_msg.point.y = pose_with_covariance_->pose.pose.position.y;
   //    lookahead_point_msg.point.x = rear_x;
   //    lookahead_point_msg.point.y = rear_y;
       lookahead_point_msg.point.z = predicted_yaw;
@@ -210,6 +230,14 @@ void SimplePurePursuit::onTimer()
       cmd.longitudinal.speed = angle_limit_v_;
     } else
       cmd.longitudinal.speed = target_longitudinal_vel;
+
+//  GNSS信号停止時に速度を下げて移動する。
+    if (std::hypot(odometry_->pose.pose.position.x - pose_with_covariance_->pose.pose.position.x,
+                   odometry_->pose.pose.position.y - pose_with_covariance_->pose.pose.position.y)
+      >= current_longitudinal_vel) { // 現在速度より大きい = 1s間の移動距離より大きい
+      cmd.longitudinal.speed = 1.38889; // 5km/h
+    }
+
     cmd.longitudinal.acceleration =
       speed_proportional_gain_ * (cmd.longitudinal.speed - current_longitudinal_vel); //  速度は振動しそうだ
 
@@ -249,6 +277,10 @@ bool SimplePurePursuit::subscribeMessageAvailable()
   }
   if (!trajectory_) {
     RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000 /*ms*/, "trajectory is not available");
+    return false;
+  }
+  if (!pose_with_covariance_) { // by ChatGPT
+    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000 /*ms*/, "pose_with_covariance is not available");
     return false;
   }
   return true;
