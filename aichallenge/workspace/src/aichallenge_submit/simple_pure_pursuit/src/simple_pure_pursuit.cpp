@@ -124,7 +124,7 @@ void SimplePurePursuit::onTimer()
     double rear_y = odometry_->pose.pose.position.y -
                     wheel_base_ / 2.0 * std::sin(odometry_->pose.pose.orientation.z);
 */
-    // zは誤っているが、一旦もとに戻す(10/27 20:27)
+    // zは誤っているが、一旦もとに戻す(10/27 20:27)->やはりおかしかったので、コメントアウト
 //    double rear_x = predicted_x - wheel_base_ / 2.0 * std::cos(odometry_->pose.pose.orientation.z);
 //    double rear_y = predicted_y - wheel_base_ / 2.0 * std::sin(odometry_->pose.pose.orientation.z);
     double rear_x = predicted_x - wheel_base_ / 2.0 * std::cos(predicted_yaw);
@@ -172,6 +172,7 @@ void SimplePurePursuit::onTimer()
         pose_with_covariance_->pose.pose.position.y = test_y;
       }
       dbg_cnt++;
+      // 以下、モニタ用に、ルックアヘッドポイントに代入
       lookahead_point_msg.point.x = pose_with_covariance_->pose.pose.position.x;
 
   //    lookahead_point_msg.point.y = predicted_y;
@@ -207,18 +208,13 @@ void SimplePurePursuit::onTimer()
     //  走行速度を考慮したゲイン調整については、速度による操舵遅れも操舵指示の大きさの変化に反映済みと考えて、不要とする。
 
     // ここから追加
+/* 以下、微分制御追加 */
 /*
-    double steering_diff;
-    if ((last_steering_angle >= 0 && cmd.lateral.steering_tire_angle >= 0)
-    || (last_steering_angle <  0 && cmd.lateral.steering_tire_angle <  0)) { // 前回の操舵向きと同じ
-      steering_diff = abs(cmd.lateral.steering_tire_angle) - abs(last_steering_angle);
-      if (steering_diff > 0) { // 前回よりも指示値が大きくなった、すなわち、追従できていない。
-        if (last_steering_angle >= 0) 
-          cmd.lateral.steering_tire_angle += steering_diff * steering_diff_gain_;
-        else
-          cmd.lateral.steering_tire_angle -= steering_diff * steering_diff_gain_;
-      }
-    }
+    double target_angle = std::atan2(2.0 * wheel_base_ * std::sin(alpha), lookahead_distance);
+
+    cmd.lateral.steering_tire_angle =
+      steering_tire_angle_gain_ * target_angle + steering_diff_gain_ * (target_angle - last_steering_angle);
+    last_steering_angle = target_angle;
 */  //  だめだ。戻しが遅い。戻しについても、微分制御を入れなければ、間に合わない。
     last_steering_angle = cmd.lateral.steering_tire_angle;
     // 追加終わり
