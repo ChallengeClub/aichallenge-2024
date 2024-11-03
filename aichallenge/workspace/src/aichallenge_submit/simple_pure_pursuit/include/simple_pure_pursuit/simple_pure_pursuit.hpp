@@ -50,16 +50,16 @@ class SimplePurePursuit : public rclcpp::Node {
   const double wheel_base_;
   const double lookahead_gain_;
   const double lookahead_gain2_; // 先読み用
-//  const double lookahead_gain3_; // 速度操舵角制御用
   const double lookahead_min_distance_;
   const double lookahead_min_distance2_;  // 先読み用
-//  const double lookahead_min_distance3_;  // 速度操舵角制御用
   const double speed_proportional_gain_;
+  const double acceleration_offset_;  //  速度維持用オフセット
   const double steering_diff_gain_;  // 操舵制御用
   const bool use_external_target_vel_;
   const double map_vel_gain_;
   const double external_target_vel_;
   const bool use_steer_angle_v_limit_;
+  const double predict_time_v_limit_; //  速度制限用先読み時間
   const double v_limit_angle_;
   const double v_limit_angle2_;
   const double angle_limit_v_;
