@@ -43,7 +43,8 @@ done
 
 # Move windows
 wmctrl -a "RViz" && wmctrl -r "RViz" -e 0,0,0,1920,1043
-wmctrl -a "AWSIM" && wmctrl -r "AWSIM" -e 0,0,0,900,1043
+#wmctrl -a "AWSIM" && wmctrl -r "AWSIM" -e 0,0,0,900,1043
+wmctrl -a "AWSIM" && wmctrl -r "AWSIM" -e 0,0,543,900,500
 
 ros2 service call /debug/service/capture_screen std_srvs/srv/Trigger >/dev/null
 sleep 1
