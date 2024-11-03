@@ -245,7 +245,7 @@
     <param name="lookahead_gain3" value="0.0"/> <!-- 速度操舵角制御用 -->
     <param name="lookahead_min_distance" value="3.5"/> <!-- Original -->
     <param name="lookahead_min_distance" value="0.5"/> <!-- 15km/h OK -->
-    <param name="lookahead_min_distance" value="1.0"/> <!-- Try -->
+    <param name="lookahead_min_distance" value="2.0"/> <!-- Try -->
     <param name="lookahead_min_distance2" value="5.0"/> <!-- Try -->
     <param name="lookahead_min_distance2" value="4.5"/> <!-- Try -->
     <param name="lookahead_min_distance3" value="4.5"/> <!-- Try -->

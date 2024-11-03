@@ -114,8 +114,11 @@ void SimplePurePursuit::onTimer()
 
     // calc lateral control
     //// calc lookahead distance
-    double lookahead_distance = lookahead_gain_ * target_longitudinal_vel + lookahead_min_distance_;
-    double lookahead_distance2 = lookahead_gain2_ * target_longitudinal_vel + lookahead_min_distance2_; // 先読み用
+//    double lookahead_distance = lookahead_gain_ * target_longitudinal_vel + lookahead_min_distance_;
+//    double lookahead_distance2 = lookahead_gain2_ * target_longitudinal_vel + lookahead_min_distance2_; // 先読み用
+//  ↑バグ。ルックアヘッド距離は、現在速度から求めなければならない。
+    double lookahead_distance = lookahead_gain_ * current_longitudinal_vel + lookahead_min_distance_;
+    double lookahead_distance2 = lookahead_gain2_ * current_longitudinal_vel + lookahead_min_distance2_; // 先読み用
 
     //// calc center coordinate of rear wheel
 /*  予測位置で算出するように変更
@@ -164,6 +167,7 @@ void SimplePurePursuit::onTimer()
   //    lookahead_point_msg.point.x = odometry_->pose.pose.position.x;
   //    lookahead_point_msg.point.y = odometry_->pose.pose.position.y;
   //    lookahead_point_msg.point.x = predicted_x;
+/*
       if (dbg_cnt % 300 <= 40) {  // GNSS信号停止。300*30ms中、40*30msの間は更新される。
         test_x = pose_with_covariance_->pose.pose.position.x;
         test_y = pose_with_covariance_->pose.pose.position.y;
@@ -172,11 +176,14 @@ void SimplePurePursuit::onTimer()
         pose_with_covariance_->pose.pose.position.y = test_y;
       }
       dbg_cnt++;
+*/
       // 以下、モニタ用に、ルックアヘッドポイントに代入
-      lookahead_point_msg.point.x = pose_with_covariance_->pose.pose.position.x;
+//      lookahead_point_msg.point.x = pose_with_covariance_->pose.pose.position.x;
+      lookahead_point_msg.point.x = closet_traj_point.pose.position.x;
+      lookahead_point_msg.point.y = lookahead_point_x;
 
   //    lookahead_point_msg.point.y = predicted_y;
-      lookahead_point_msg.point.y = pose_with_covariance_->pose.pose.position.y;
+//      lookahead_point_msg.point.y = pose_with_covariance_->pose.pose.position.y;
   //    lookahead_point_msg.point.x = rear_x;
   //    lookahead_point_msg.point.y = rear_y;
       lookahead_point_msg.point.z = predicted_yaw;
