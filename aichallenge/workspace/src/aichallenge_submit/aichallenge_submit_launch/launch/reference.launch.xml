@@ -241,13 +241,13 @@
     <param name="lookahead_gain" value="0.5"/> <!-- Try -->
     <param name="lookahead_gain2" value="0.5"/> <!-- Try -->
     <param name="lookahead_gain2" value="0.3"/> <!-- Try -->
-    <param name="lookahead_gain2" value="0.1"/> <!-- Try -->
+    <param name="lookahead_gain2" value="0.2"/> <!-- Try -->
     <param name="lookahead_min_distance" value="3.5"/> <!-- Original -->
     <param name="lookahead_min_distance" value="0.5"/> <!-- 15km/h OK -->
     <param name="lookahead_min_distance" value="2.0"/> <!-- Try -->
     <param name="lookahead_min_distance2" value="5.0"/> <!-- Try -->
     <param name="lookahead_min_distance2" value="4.5"/> <!-- Try -->
-    <param name="lookahead_min_distance2" value="4.5"/> <!-- Try -->
+    <param name="lookahead_min_distance2" value="5.0"/> <!-- Try -->
     <param name="speed_proportional_gain" value="1.0"/> <!-- Original -->
     <param name="speed_proportional_gain" value="100.0"/> <!-- Try -->
     <param name="acceleration_offset" value="0.3"/> <!-- 実機で速度維持に必要なoffset -->
@@ -274,6 +274,7 @@
     <param name="angle_limit_v" value="7.77778"/> <!-- 28km/h -->
     <param name="angle_limit_v" value="8.33333"/> <!-- 30km/h -->
     <param name="angle_limit_v" value="7.77778"/> <!-- 28km/h -->
+    <param name="angle_limit_v" value="8.33333"/> <!-- 30km/h -->
     <param name="angle_limit_v2" value="2.77778"/> <!-- [m/s] 10km/h -->
 
     <remap from="input/kinematics" to="/localization/kinematic_state"/>
