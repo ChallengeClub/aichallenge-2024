@@ -4,6 +4,7 @@
 #include <autoware_auto_control_msgs/msg/ackermann_control_command.hpp>
 #include <autoware_auto_planning_msgs/msg/trajectory.hpp>
 #include <autoware_auto_planning_msgs/msg/trajectory_point.hpp>
+#include <autoware_auto_vehicle_msgs/msg/steering_report.hpp> // 操作角による速度制限
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/point_stamped.hpp>
@@ -21,6 +22,7 @@ using geometry_msgs::msg::Pose;
 using geometry_msgs::msg::PointStamped;
 using geometry_msgs::msg::Twist;
 using geometry_msgs::msg::PoseWithCovarianceStamped;  //by ChatGPT
+using autoware_auto_vehicle_msgs::msg::SteeringReport;  // 操作角による速度制限
 using nav_msgs::msg::Odometry;
 
 class SimplePurePursuit : public rclcpp::Node {
@@ -31,6 +33,7 @@ class SimplePurePursuit : public rclcpp::Node {
   rclcpp::Subscription<Odometry>::SharedPtr sub_kinematics_;
   rclcpp::Subscription<Trajectory>::SharedPtr sub_trajectory_;
   rclcpp::Subscription<PoseWithCovarianceStamped>::SharedPtr sub_pose_with_covariance_;//by ChatGPT
+  rclcpp::Subscription<SteeringReport>::SharedPtr sub_steering_status_;  // 操作角による速度制限
   
   // publishers
   rclcpp::Publisher<AckermannControlCommand>::SharedPtr pub_cmd_;
@@ -44,7 +47,7 @@ class SimplePurePursuit : public rclcpp::Node {
   Trajectory::SharedPtr trajectory_;
   Odometry::SharedPtr odometry_;
   PoseWithCovarianceStamped::SharedPtr pose_with_covariance_;//by ChatGPT
-
+  SteeringReport::SharedPtr steering_status_;  // 操作角による速度制限
 
   // pure pursuit parameters
   const double wheel_base_;

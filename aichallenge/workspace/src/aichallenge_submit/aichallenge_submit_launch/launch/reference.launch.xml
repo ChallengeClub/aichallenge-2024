@@ -264,7 +264,7 @@
     <param name="v_limit_angle" value="0.20933"/> <!-- [rad] 12deg 引っかからない-->
     <param name="v_limit_angle" value="0.17444"/> <!-- 10deg -->
     <param name="v_limit_angle" value="0.4"/> <!-- Try -->
-    <param name="v_limit_angle" value="0.45"/> <!-- Try -->
+    <param name="v_limit_angle" value="0.22"/> <!-- Try -->
     <param name="v_limit_angle2" value="0.43611"/> <!-- 25deg -->
 
     <param name="angle_limit_v" value="4.16667"/> <!-- [m/s] 15km/h -->
@@ -274,6 +274,7 @@
     <param name="angle_limit_v" value="7.77778"/> <!-- 28km/h -->
     <param name="angle_limit_v" value="8.33333"/> <!-- 30km/h -->
     <param name="angle_limit_v" value="7.77778"/> <!-- 28km/h -->
+    <param name="angle_limit_v" value="6.94444"/> <!-- 25km/h -->
     <param name="angle_limit_v" value="8.33333"/> <!-- 30km/h -->
     <param name="angle_limit_v2" value="2.77778"/> <!-- [m/s] 10km/h -->
 

@@ -53,6 +53,13 @@ SimplePurePursuit::SimplePurePursuit()
       pose_with_covariance_ = msg;
     });
 
+  // 操舵角による速度制限
+  sub_steering_status_ = create_subscription<SteeringReport>(
+    "/vehicle/status/steering_status", 1,
+    [this](const SteeringReport::SharedPtr msg) {
+      steering_status_ = msg;
+    });
+
   using namespace std::literals::chrono_literals;
   timer_ =
     rclcpp::create_timer(this, get_clock(), 30ms, std::bind(&SimplePurePursuit::onTimer, this));
@@ -169,8 +176,8 @@ void SimplePurePursuit::onTimer()
   //    lookahead_point_msg.point.x = odometry_->pose.pose.position.x;
   //    lookahead_point_msg.point.y = odometry_->pose.pose.position.y;
   //    lookahead_point_msg.point.x = predicted_x;
-/*
-      if (dbg_cnt % 300 <= 40) {  // GNSS信号停止。300*30ms中、40*30msの間は更新される。
+/*    
+      if (dbg_cnt % 300 <= 40) {  // GNSS信号停止。300*30ms中、40*30msの間は更新される。テスト用コード
         test_x = pose_with_covariance_->pose.pose.position.x;
         test_y = pose_with_covariance_->pose.pose.position.y;
       } else {
@@ -238,14 +245,12 @@ void SimplePurePursuit::onTimer()
 
     cmd.longitudinal.speed = target_longitudinal_vel;
 //  操舵角による速度制限
-    if (use_steer_angle_v_limit_) {
-
-//      double current_longitudinal_vel = odometry_->twist.twist.linear.x; // 現在の速度
-//      double yaw = tf2::getYaw(odometry_->pose.pose.orientation);// 現在の車体の向き。x軸と一致する向きが0
+    if (use_steer_angle_v_limit_) { //  指令値と現在の操舵角との差が一定以上になったら、速度制限をかける。先読み方式はバタついてしまっていた。早めの減速には使えそうだが。
+/*
+//    以下、先読み方式
       predicted_x = odometry_->pose.pose.position.x + std::cos(yaw) * current_longitudinal_vel * predict_time_v_limit_;
       predicted_y = odometry_->pose.pose.position.y + std::sin(yaw) * current_longitudinal_vel * predict_time_v_limit_;
       predicted_yaw = yaw + odometry_->twist.twist.angular.z * predict_time_v_limit_; // zは、車体の角速度（ラジアン/秒）
-//      geometry_msgs::msg::Pose predicted_pos = odometry_->pose.pose;
       predicted_pos.position.x = predicted_x;
       predicted_pos.position.y = predicted_y;
 
@@ -282,11 +287,13 @@ void SimplePurePursuit::onTimer()
 
       alpha = std::atan2(lookahead_point2_y - rear_y, lookahead_point2_x - rear_x) - predicted_yaw; // 遠方のルックアヘッド
       steering_tire_angle2 = std::atan2(2.0 * wheel_base_ * std::sin(alpha), lookahead_distance2);
-      double predict_target_angle = steering_tire_angle_gain_ * (steering_tire_angle + steering_tire_angle2) / 2.0;  // 2つのルックアヘッドの平均を操舵角にする
+      double reference_target_angle = steering_tire_angle_gain_ * (steering_tire_angle + steering_tire_angle2) / 2.0;  // 2つのルックアヘッドの平均を操舵角にする
+*/
+      double reference_target_angle = steering_tire_angle_gain_ * (steering_tire_angle + steering_tire_angle2) / 2.0 - steering_status_->steering_tire_angle;
 
-      lookahead_point_msg.point.z = predict_target_angle;
+      lookahead_point_msg.point.z = reference_target_angle;
       
-      if (std::fabs(predict_target_angle) > v_limit_angle_) 
+      if (std::fabs(reference_target_angle) > v_limit_angle_) 
         cmd.longitudinal.speed = std::min(angle_limit_v_, target_longitudinal_vel);
         //  ここで、操舵角をもとに、目標速度を加減してもいいかもしれない
     }
@@ -339,6 +346,10 @@ bool SimplePurePursuit::subscribeMessageAvailable()
   }
   if (!pose_with_covariance_) { // by ChatGPT
     RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000 /*ms*/, "pose_with_covariance is not available");
+    return false;
+  }
+  if (!steering_status_) {  // 操舵角による速度制限
+    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000 /*ms*/, "steering_status is not available");
     return false;
   }
   return true;
