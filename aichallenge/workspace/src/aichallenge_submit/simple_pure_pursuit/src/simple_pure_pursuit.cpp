@@ -64,6 +64,81 @@ SimplePurePursuit::SimplePurePursuit()
   timer_ =
     rclcpp::create_timer(this, get_clock(), 30ms, std::bind(&SimplePurePursuit::onTimer, this));
 
+// RTPC start
+  param_handler_ = this->add_on_set_parameters_callback(
+    [this](const std::vector<rclcpp::Parameter>& params) -> rcl_interfaces::msg::SetParametersResult {
+      auto results = std::make_shared<rcl_interfaces::msg::SetParametersResult>();
+      results->successful = true;
+
+      for (auto&& param : params) {
+        if (param.get_name() == "external_target_vel") {
+          external_target_vel_ = param.as_double();
+        } else if (param.get_name() == "map_vel_gain") {
+          map_vel_gain_ = param.as_double();
+        } else if (param.get_name() == "use_external_target_vel") {
+          use_external_target_vel_ = param.as_bool();
+        } else if (param.get_name() == "use_steer_angle_v_limit") {
+          use_steer_angle_v_limit_ = param.as_bool();
+        } else if (param.get_name() == "v_limit_angle") {
+          v_limit_angle_ = param.as_double();
+        } else if (param.get_name() == "angle_limit_v") {
+          angle_limit_v_ = param.as_double();
+        }
+      }
+      return *results;
+    }
+  );
+
+/*
+  param_subscriber_ = std::make_shared<rclcpp::ParameterEventHandler>(this);
+  auto cb = [this](const rclcpp::Parameter & p) {
+
+    if (p.get_name() == "external_target_vel") {
+      external_target_vel_ = p.as_double();
+      RCLCPP_INFO(this->get_logger(), "external_target_vel change to %f", external_target_vel_);
+    } else if (p.get_name() == "map_vel_gain") {
+      map_vel_gain_ = p.as_double();
+      RCLCPP_INFO(this->get_logger(), "map_vel_gain change to %f", map_vel_gain_);
+    } else if (p.get_name() == "use_external_target_vel") {
+      use_external_target_vel_ = p.as_bool();
+      RCLCPP_INFO(this->get_logger(), "use_external_target_vel change to %s", use_external_target_vel_ ? "true" : "false");
+    } else if (p.get_name() == "use_steer_angle_v_limit") {
+      use_steer_angle_v_limit_ = p.as_bool();
+      RCLCPP_INFO(this->get_logger(), "use_steer_angle_v_limit change to %s", use_steer_angle_v_limit_ ? "true" : "false");
+    } else if (p.get_name() == "v_limit_angle") {
+      v_limit_angle_ = p.as_double();
+      RCLCPP_INFO(this->get_logger(), "v_limit_angle change to %f", v_limit_angle_);
+    } else if (p.get_name() == "angle_limit_v") {
+      angle_limit_v_ = p.as_double();
+      RCLCPP_INFO(this->get_logger(), "angle_limit_v change to %f", angle_limit_v_);
+    }
+---
+  acceleration_offset
+  
+  angle_limit_v2
+  external_target_vel
+  lookahead_gain
+  lookahead_gain2
+  lookahead_min_distance
+  lookahead_min_distance2
+  
+  predict_time
+  predict_time_v_limit
+  speed_proportional_gain
+  steering_diff_gain
+  steering_tire_angle_gain
+  
+  
+  v_limit_angle2
+  wheel_base
+---
+
+  };
+  cb_handle_ = param_subscriber_->add_parameter_callback("external_target_vel", cb);  //  そうか、これだ。これがあるから、１つしか、パラメータをセットできない。
+*/
+  
+  // RTPC end
+
   dbg_cnt = 0;
 }
 
@@ -231,8 +306,9 @@ void SimplePurePursuit::onTimer()
     cmd.lateral.steering_tire_angle =
       steering_tire_angle_gain_ * target_angle + steering_diff_gain_ * (target_angle - last_steering_angle);
     last_steering_angle = target_angle;
-*/  //  だめだ。戻しが遅い。戻しについても、微分制御を入れなければ、間に合わない。
-    last_steering_angle = cmd.lateral.steering_tire_angle;
+  //  だめだ。戻しが遅い。戻しについても、微分制御を入れなければ、間に合わない。
+    last_steering_angle = cmd.lateral.steering_tire_angle;  // 微分操舵制御用
+*/
     // 追加終わり
 
 //  GNSS信号停止時に速度を下げて移動する。

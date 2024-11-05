@@ -48,6 +48,7 @@ class SimplePurePursuit : public rclcpp::Node {
   Odometry::SharedPtr odometry_;
   PoseWithCovarianceStamped::SharedPtr pose_with_covariance_;//by ChatGPT
   SteeringReport::SharedPtr steering_status_;  // 操作角による速度制限
+  OnSetParametersCallbackHandle::SharedPtr  param_handler_;  // RTPC
 
   // pure pursuit parameters
   const double wheel_base_;
@@ -58,15 +59,15 @@ class SimplePurePursuit : public rclcpp::Node {
   const double speed_proportional_gain_;
   const double acceleration_offset_;  //  速度維持用オフセット
   const double steering_diff_gain_;  // 操舵制御用
-  const bool use_external_target_vel_;
-  const double map_vel_gain_;
-  const double external_target_vel_;
-  const bool use_steer_angle_v_limit_;
+  bool use_external_target_vel_;
+  double map_vel_gain_;
+  double external_target_vel_;  // RTPC
+  bool use_steer_angle_v_limit_;
   const double predict_time_v_limit_; //  速度制限用先読み時間
-  const double v_limit_angle_;
-  const double v_limit_angle2_;
-  const double angle_limit_v_;
-  const double angle_limit_v2_;
+  double v_limit_angle_;
+  const double v_limit_angle2_; // 未使用
+  double angle_limit_v_;
+  const double angle_limit_v2_; // 未使用
   const double predict_time_;
   const double steering_tire_angle_gain_;
 
@@ -74,7 +75,9 @@ class SimplePurePursuit : public rclcpp::Node {
  private:
   void onTimer();
   bool subscribeMessageAvailable();
-  double last_steering_angle; //  操舵制御用
+//  std::shared_ptr<rclcpp::ParameterEventHandler>  param_subscriber_;  //  RTPC
+//  std::shared_ptr<rclcpp::ParameterCallbackHandle>  cb_handle_;       //  RTPC
+//  double last_steering_angle; //  微分操舵制御用
   int dbg_cnt;  //  テスト用
   double test_x;
   double test_y;
