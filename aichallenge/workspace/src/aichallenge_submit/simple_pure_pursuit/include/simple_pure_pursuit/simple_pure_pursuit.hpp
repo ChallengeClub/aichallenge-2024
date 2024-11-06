@@ -52,13 +52,13 @@ class SimplePurePursuit : public rclcpp::Node {
 
   // pure pursuit parameters
   const double wheel_base_;
-  const double lookahead_gain_;
-  const double lookahead_gain2_; // 先読み用
-  const double lookahead_min_distance_;
-  const double lookahead_min_distance2_;  // 先読み用
+  double lookahead_gain_;
+  double lookahead_gain2_; // 先読み用
+  double lookahead_min_distance_;
+  double lookahead_min_distance2_;  // 先読み用
   const double speed_proportional_gain_;
-  const double acceleration_offset_;  //  速度維持用オフセット
-  const double steering_diff_gain_;  // 操舵制御用
+  double acceleration_offset_;  //  速度維持用オフセット
+  const double steering_diff_gain_;  // 操舵制御用 未使用
   bool use_external_target_vel_;
   double map_vel_gain_;
   double external_target_vel_;  // RTPC
@@ -68,8 +68,8 @@ class SimplePurePursuit : public rclcpp::Node {
   const double v_limit_angle2_; // 未使用
   double angle_limit_v_;
   const double angle_limit_v2_; // 未使用
-  const double predict_time_;
-  const double steering_tire_angle_gain_;
+  double predict_time_;
+  double steering_tire_angle_gain_;
 
 
  private:

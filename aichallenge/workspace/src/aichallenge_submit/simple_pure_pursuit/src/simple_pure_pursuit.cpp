@@ -83,6 +83,20 @@ SimplePurePursuit::SimplePurePursuit()
           v_limit_angle_ = param.as_double();
         } else if (param.get_name() == "angle_limit_v") {
           angle_limit_v_ = param.as_double();
+        } else if (param.get_name() == "steering_tire_angle_gain") {
+          steering_tire_angle_gain_ = param.as_double();
+        } else if (param.get_name() == "predict_time") {
+          predict_time_ = param.as_double();
+        } else if (param.get_name() == "acceleration_offset") {
+          acceleration_offset_ = param.as_double();
+        } else if (param.get_name() == "lookahead_gain") {
+          lookahead_gain_ = param.as_double();
+        } else if (param.get_name() == "lookahead_gain2") {
+          lookahead_gain2_ = param.as_double();
+        } else if (param.get_name() == "lookahead_min_distance") {
+          lookahead_min_distance_ = param.as_double();
+        } else if (param.get_name() == "lookahead_min_distance2") {
+          lookahead_min_distance2_ = param.as_double();
         }
       }
       return *results;
@@ -112,26 +126,6 @@ SimplePurePursuit::SimplePurePursuit()
       angle_limit_v_ = p.as_double();
       RCLCPP_INFO(this->get_logger(), "angle_limit_v change to %f", angle_limit_v_);
     }
----
-  acceleration_offset
-  
-  angle_limit_v2
-  external_target_vel
-  lookahead_gain
-  lookahead_gain2
-  lookahead_min_distance
-  lookahead_min_distance2
-  
-  predict_time
-  predict_time_v_limit
-  speed_proportional_gain
-  steering_diff_gain
-  steering_tire_angle_gain
-  
-  
-  v_limit_angle2
-  wheel_base
----
 
   };
   cb_handle_ = param_subscriber_->add_parameter_callback("external_target_vel", cb);  //  そうか、これだ。これがあるから、１つしか、パラメータをセットできない。
