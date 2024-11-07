@@ -225,7 +225,7 @@
   
     <param name="use_external_target_vel" value="false"/>
     <param name="map_vel_gain" value="1.3"/> <!-- mapからの読み取り速度をvalue倍します -->
-    <param name="map_vel_gain" value="1.0"/> <!-- mapからの読み取り速度をvalue倍します -->
+    <param name="map_vel_gain" value="2.0"/> <!-- mapからの読み取り速度をvalue倍します -->
     <param name="external_target_vel" value="8.33333"/> <!-- 30km/h -->
     <param name="external_target_vel" value="5.55556"/> <!-- 20km/h -->
     <param name="external_target_vel" value="4.16667"/> <!-- 15km/h -->
@@ -234,8 +234,8 @@
     <param name="external_target_vel" value="5.939"/> <!-- 21km/h -->
     <param name="external_target_vel" value="9.72222"/> <!-- 35km/h -->
     <param name="external_target_vel" value="5.55556"/> <!-- 20km/h -->
-    <param name="external_target_vel" value="4.16667"/> <!-- 15km/h -->
     <param name="external_target_vel" value="9.72222"/> <!-- 35km/h -->
+    <param name="external_target_vel" value="4.16667"/> <!-- 15km/h -->
     
     <param name="lookahead_gain" value="0.5"/> <!-- Original -->
     <param name="lookahead_gain" value="0.5"/> <!-- Try -->
