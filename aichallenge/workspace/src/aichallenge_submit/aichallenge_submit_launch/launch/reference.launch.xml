@@ -218,6 +218,7 @@
   <let name="steering_tire_angle_gain_var" value="1.639" unless="$(var simulation)"/> <!-- original -->
   <let name="steering_tire_angle_gain_var" value="3.278" unless="$(var simulation)"/>
   <let name="steering_tire_angle_gain_var" value="1.639" unless="$(var simulation)"/> <!-- original -->
+  <let name="steering_tire_angle_gain_var" value="3.278" unless="$(var simulation)"/>
   
   <node pkg="simple_pure_pursuit" exec="simple_pure_pursuit" name="simple_pure_pursuit_node" output="screen">
     <param name="predict_time" value="0.7"/> <!-- n秒先の自己位置を予測する -->
