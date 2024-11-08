@@ -97,6 +97,8 @@ SimplePurePursuit::SimplePurePursuit()
           lookahead_min_distance_ = param.as_double();
         } else if (param.get_name() == "lookahead_min_distance2") {
           lookahead_min_distance2_ = param.as_double();
+        } else if (param.get_name() == "speed_proportional_gain") {
+          speed_proportional_gain_ = param.as_double();
         }
       }
       return *results;

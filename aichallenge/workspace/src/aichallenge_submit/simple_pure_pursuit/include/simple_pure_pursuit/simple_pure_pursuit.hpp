@@ -56,7 +56,7 @@ class SimplePurePursuit : public rclcpp::Node {
   double lookahead_gain2_; // 先読み用
   double lookahead_min_distance_;
   double lookahead_min_distance2_;  // 先読み用
-  const double speed_proportional_gain_;
+  double speed_proportional_gain_;
   double acceleration_offset_;  //  速度維持用オフセット
   const double steering_diff_gain_;  // 操舵制御用 未使用
   bool use_external_target_vel_;
